@@ -1,0 +1,119 @@
+{
+    "env": {
+        "node": true,
+        "jest": true
+    },
+    "plugins": [
+        "@typescript-eslint",
+        "filenames",
+        "import"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+        "airbnb-base",
+        "plugin:prettier/recommended",
+        "plugin:import/errors",
+        "prettier",
+        "plugin:@typescript-eslint/recommended",
+        "prettier/@typescript-eslint"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2019,
+        "sourceType": "module"
+    },
+    "settings": {
+        "import/resolver": {
+            "typescript": {}
+        }
+    },
+    "rules": {
+        "import/extensions": ["error", "never"],
+        "@typescript-eslint/consistent-type-assertions": [
+            "error",
+            {
+                "assertionStyle": "as",
+                "objectLiteralTypeAssertions": "allow-as-parameter"
+            }
+        ],
+        "@typescript-eslint/explicit-function-return-type": "error",
+        "@typescript-eslint/explicit-member-accessibility": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_"
+            }
+        ],
+        "filenames/match-exported": [
+            "error",
+            [
+                null,
+                "kebab"
+            ]
+        ],
+        "filenames/match-regex": [
+            "error",
+            "^[a-zA-Z]+(-[a-z]+)*(\\.[a-z]+)?$",
+            true
+        ],
+        "func-names": [
+            2,
+            "never"
+        ],
+        "func-style": [
+            2,
+            "expression",
+            {
+                "allowArrowFunctions": true
+            }
+        ],
+        "global-require": 0,
+        "import/no-cycle": "error",
+        "import/no-unresolved": "error",
+        "import/order": [
+            "error",
+            {
+                "groups": [
+                    [
+                        "builtin",
+                        "external"
+                    ],
+                    [
+                        "sibling",
+                        "parent",
+                        "internal",
+                        "index"
+                    ]
+                ],
+                "newlines-between": "always-and-inside-groups"
+            }
+        ],
+        "max-classes-per-file": 0,
+        "no-restricted-imports": [
+            "error",
+            {
+                "patterns": [
+                    "../../*"
+                ]
+            }
+        ],
+        "sort-keys": "error",
+        "strict": [
+            0,
+            "global"
+        ]
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.js"
+            ],
+            "rules": {
+                "@typescript-eslint/no-var-requires": "off"
+            }
+        }
+    ]
+}

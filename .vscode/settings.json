@@ -1,0 +1,17 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "eslint.validate": ["javascript", {"language": "typescript"}],
+  "editor.tabSize": 2,
+  "cSpell.enableFiletypes": [
+    "javascript",
+    "json",
+    "markdown",
+    "typescript"
+  ],
+}

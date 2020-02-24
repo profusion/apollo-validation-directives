@@ -1,0 +1,11 @@
+/.eslint*
+/.prettierrc.json
+/.vscode
+/commitlint.config.js
+/coverage
+/examples
+/jest.config.js
+/lib
+/tsconfig.json
+/*.tgz
+/build/examples

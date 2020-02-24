@@ -1,0 +1,62 @@
+{
+  "name": "@profusion/apollo-validation-directives",
+  "version": "1.0.0",
+  "description": "GraphQL directives to implement field validations in Apollo Server",
+  "main": "./build/lib/index.js",
+  "types": "./build/lib/index.d.ts",
+  "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
+  "license": "MIT",
+  "repository": "https://github.com/profusion/apollo-validation-directives",
+  "engines": {
+    "node": "^12.14.0",
+    "yarn": "^1.21.1"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint",
+      "pre-push": "yarn lint && yarn test",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "scripts": {
+    "example:value-validation": "ts-node examples/value-validation-directives.ts",
+    "example:access-control": "ts-node examples/access-control-directives.ts",
+    "check-types": "tsc --noEmit",
+    "run-lint": "eslint --max-warnings=0 --ext .ts lib examples",
+    "lint": "run-s check-types run-lint",
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "tsc"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-angular": "^8.3.4",
+    "@types/jest": "^25.1.3",
+    "@typescript-eslint/eslint-plugin": "^2.20.0",
+    "@typescript-eslint/parser": "^2.20.0",
+    "apollo-server": "^2.10.1",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-import-resolver-typescript": "^2.0.0",
+    "eslint-plugin-filenames": "^1.3.2",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-prettier": "^3.1.2",
+    "husky": "^4.2.3",
+    "jest": "^25.1.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.19.1",
+    "ts-jest": "^25.2.1",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.2"
+  },
+  "peerDependencies": {
+    "apollo-server": "^2.10.1"
+  },
+  "dependencies": {
+    "apollo-server-errors": "^2.3.4",
+    "graphql": "^14.6.0",
+    "graphql-tag": "^2.10.3",
+    "graphql-tools": "^4.0.7"
+  }
+}
