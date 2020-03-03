@@ -1,16 +1,12 @@
 {
   "name": "@profusion/apollo-validation-directives",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "GraphQL directives to implement field validations in Apollo Server",
   "main": "./build/lib/index.js",
   "types": "./build/lib/index.d.ts",
   "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
   "license": "MIT",
   "repository": "https://github.com/profusion/apollo-validation-directives",
-  "engines": {
-    "node": "^12.14.0",
-    "yarn": "^1.21.1"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "yarn lint",
