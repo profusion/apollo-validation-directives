@@ -1,6 +1,6 @@
 {
   "name": "@profusion/apollo-validation-directives",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "GraphQL directives to implement field validations in Apollo Server",
   "main": "./build/lib/index.js",
   "types": "./build/lib/index.d.ts",

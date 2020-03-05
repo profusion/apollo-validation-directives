@@ -229,6 +229,21 @@ export class HasPermissionsDirectiveVisitor<
       ) {
         throw new ForbiddenError(getErrorMessage(missingPermissions));
       }
+      /*
+        If any missing permissions existed from other hasPermissions that
+        were executed before it, then pass or extend that array with the new
+        permissions
+      */
+      const existingMissingPermissions = args[missingPermissionsArgumentName];
+      if (existingMissingPermissions) {
+        if (!missingPermissions) {
+          missingPermissions = existingMissingPermissions;
+        } else {
+          missingPermissions = missingPermissions.concat(
+            existingMissingPermissions,
+          );
+        }
+      }
 
       const enhancedArgs = {
         ...args,

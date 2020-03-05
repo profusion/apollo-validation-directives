@@ -44,7 +44,19 @@ enum HasPermissionsDirectivePolicy {
     );
   });
 
-  const grantedPermissions = ['x', 'y', 'z'];
+  const grantedPermissions = ['x', 'y', 'z', 'xpto'];
+
+  const createEmailResolver = (key = 'email') => (
+    fields: { [key: string]: string },
+    { missingPermissions }: { missingPermissions: string[] },
+  ): string => {
+    const email = fields[key];
+    if (missingPermissions) {
+      const [user, domain] = email.split('@');
+      return `${user[0]}${'*'.repeat(user.length - 1)}@${domain}`;
+    }
+    return email;
+  };
 
   describe('filterMissingPermissions', (): void => {
     const requiredPermissions = ['x', 'y', 'z'];
@@ -180,13 +192,7 @@ enum HasPermissionsDirectivePolicy {
       const schema = makeExecutableSchema({
         resolvers: {
           SomeObject: {
-            email: ({ email }, { missingPermissions }): string => {
-              if (missingPermissions) {
-                const [user, domain] = email.split('@');
-                return `${user[0]}${'*'.repeat(user.length - 1)}@${domain}`;
-              }
-              return email;
-            },
+            email: createEmailResolver(),
           },
         },
         schemaDirectives: {
@@ -260,6 +266,12 @@ enum HasPermissionsDirectivePolicy {
 
     describe('works on whole object', (): void => {
       const schema = makeExecutableSchema({
+        resolvers: {
+          MyRestrictedObject: {
+            maskedEmail: createEmailResolver('maskedEmail'),
+            secondMaskedEmail: createEmailResolver('secondMaskedEmail'),
+          },
+        },
         schemaDirectives: {
           [name]: HasPermissionsDirectiveVisitor,
         },
@@ -270,6 +282,8 @@ enum HasPermissionsDirectivePolicy {
               restrictedField: Int # behaves as @hasPermissions(permissions: ["x"])
               anotherRestrictedField: String # behaves as @hasPermissions(permissions: ["x"])
               restrictedTwice: Int @${name}(permissions: ["y"])
+              maskedEmail: String @${name}(permissions: ["z"], policy: RESOLVER)
+              secondMaskedEmail: String @${name}(permissions: ["xpto"], policy: RESOLVER)
             }
             type Query {
               test: MyRestrictedObject
@@ -283,14 +297,18 @@ enum HasPermissionsDirectivePolicy {
             restrictedField
             anotherRestrictedField
             restrictedTwice
+            maskedEmail
+            secondMaskedEmail
           }
         }
       `);
       const rootValue = {
         test: {
           anotherRestrictedField: 'hello',
+          maskedEmail: 'user@server.com',
           restrictedField: 42,
           restrictedTwice: 123,
+          secondMaskedEmail: 'address@email.com',
         },
       };
 
@@ -315,14 +333,18 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: {
               anotherRestrictedField: null,
+              maskedEmail: null,
               restrictedField: null,
               restrictedTwice: null,
+              secondMaskedEmail: null,
             },
           },
           errors: [
             new ForbiddenError('Missing Permissions: x'),
             new ForbiddenError('Missing Permissions: x'),
             new ForbiddenError('Missing Permissions: y'),
+            new ForbiddenError('Missing Permissions: x'),
+            new ForbiddenError('Missing Permissions: x'),
           ],
         });
       });
@@ -337,8 +359,10 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: {
               anotherRestrictedField: rootValue.test.anotherRestrictedField,
+              maskedEmail: 'u***@server.com',
               restrictedField: rootValue.test.restrictedField,
               restrictedTwice: null,
+              secondMaskedEmail: 'a******@email.com',
             },
           },
           errors: [new ForbiddenError('Missing Permissions: y')],
@@ -355,15 +379,59 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: {
               anotherRestrictedField: null,
+              maskedEmail: null,
               restrictedField: null,
               restrictedTwice: null,
+              secondMaskedEmail: null,
             },
           },
           errors: [
             new ForbiddenError('Missing Permissions: x'),
             new ForbiddenError('Missing Permissions: x'),
             new ForbiddenError('Missing Permissions: x'),
+            new ForbiddenError('Missing Permissions: x'),
+            new ForbiddenError('Missing Permissions: x'),
           ],
+        });
+      });
+
+      it('combined hasPermissions 3', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x', 'xpto'],
+        });
+        const result = await graphql(schema, source, rootValue, context);
+        expect(result).toEqual({
+          data: {
+            test: {
+              anotherRestrictedField: rootValue.test.anotherRestrictedField,
+              maskedEmail: 'u***@server.com',
+              restrictedField: rootValue.test.restrictedField,
+              restrictedTwice: null,
+              secondMaskedEmail: 'address@email.com',
+            },
+          },
+          errors: [new ForbiddenError('Missing Permissions: y')],
+        });
+      });
+
+      it('combined hasPermissions 4', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x', 'z'],
+        });
+        const result = await graphql(schema, source, rootValue, context);
+        expect(result).toEqual({
+          data: {
+            test: {
+              anotherRestrictedField: rootValue.test.anotherRestrictedField,
+              maskedEmail: 'user@server.com',
+              restrictedField: rootValue.test.restrictedField,
+              restrictedTwice: null,
+              secondMaskedEmail: 'a******@email.com',
+            },
+          },
+          errors: [new ForbiddenError('Missing Permissions: y')],
         });
       });
     });
