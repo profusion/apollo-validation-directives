@@ -1,11 +1,13 @@
 import {
   graphql,
+  GraphQLArgument,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLInputType,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
+  GraphQLObjectType,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
@@ -19,6 +21,13 @@ import ValidateDirectiveVisitor, {
 const defaultLocationsStr = ValidateDirectiveVisitor.config.locations.join(
   ' | ',
 );
+
+const getFieldArg = (
+  type: GraphQLObjectType,
+  fieldName: string,
+  argName: string,
+): GraphQLArgument | undefined =>
+  type.getFields()[fieldName].args.find(({ name }) => name === argName);
 
 describe('ValidateDirectiveVisitor', (): void => {
   const minimalTypeDef = gql`
@@ -153,6 +162,7 @@ directive @${name}(
           `,
         ],
       });
+      const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       beforeEach((): void => {
         mockResolver.mockClear();
@@ -162,6 +172,7 @@ directive @${name}(
       });
 
       const value = 1234;
+      const context = { theContext: 1234 };
 
       it('calls directive if validated', async (): Promise<void> => {
         const source = print(gql`
@@ -169,12 +180,17 @@ directive @${name}(
           validated(arg: ${value})
         }
       `);
-        const result = await graphql(schema, source);
+        const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
           data: { validated: value * 2 },
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+        expect(mockValidate).toBeCalledWith(
+          value,
+          GraphQLInt,
+          QueryType,
+          context,
+        );
         expect(mockResolver).toBeCalledTimes(1);
       });
 
@@ -184,12 +200,17 @@ directive @${name}(
             defaultResolver(arg: ${value})
           }
         `);
-        const result = await graphql(schema, source, { defaultResolver: 42 });
+        const result = await graphql(
+          schema,
+          source,
+          { defaultResolver: 42 },
+          context,
+        );
         expect(result).toEqual({
           data: { defaultResolver: 42 * 2 },
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(42, GraphQLInt);
+        expect(mockValidate).toBeCalledWith(42, GraphQLInt, QueryType, context);
       });
 
       it('calls directive if validated, handles throw', async (): Promise<
@@ -204,13 +225,18 @@ directive @${name}(
         mockValidate.mockImplementationOnce((): void => {
           throw new ValidationError('forced error');
         });
-        const result = await graphql(schema, source);
+        const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
           data: { validated: null },
           errors: [new ValidationError('forced error')],
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+        expect(mockValidate).toBeCalledWith(
+          value,
+          GraphQLInt,
+          QueryType,
+          context,
+        );
         expect(mockResolver).toBeCalledTimes(1);
       });
 
@@ -224,13 +250,18 @@ directive @${name}(
         `);
         mockValidate.mockReset();
         mockValidate.mockImplementationOnce((): undefined => undefined);
-        const result = await graphql(schema, source);
+        const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
           data: { validated: null },
           errors: [new ValidationError('validation returned undefined')],
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+        expect(mockValidate).toBeCalledWith(
+          value,
+          GraphQLInt,
+          QueryType,
+          context,
+        );
         expect(mockResolver).toBeCalledTimes(1);
       });
 
@@ -253,12 +284,17 @@ directive @${name}(
         mockValidate.mockImplementationOnce((v: (number | null)[]) =>
           v.map(x => (x === null ? x : x * 2)),
         );
-        const result = await graphql(schema, source);
+        const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
           data: { validatedModifiers: [value * 2, 42 * 2, null] },
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith([value, 42, null], GraphQLIntList);
+        expect(mockValidate).toBeCalledWith(
+          [value, 42, null],
+          GraphQLIntList,
+          QueryType,
+          context,
+        );
         expect(mockResolver).toBeCalledTimes(1);
       });
 
@@ -270,7 +306,7 @@ directive @${name}(
           notValidated(arg: ${value})
         }
       `);
-        const result = await graphql(schema, source);
+        const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
           data: { notValidated: value },
         });
@@ -307,6 +343,10 @@ directive @${name}(
           `,
         ],
       });
+      const AllValidatedType = schema.getType(
+        'AllValidated',
+      ) as GraphQLObjectType;
+      const context = { theContext: 63 };
 
       const rootValue = {
         allNotValidated: { value: 34 },
@@ -326,12 +366,17 @@ directive @${name}(
             }
           }
         `);
-        const result = await graphql(schema, source, rootValue);
+        const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
           data: { allValidated: { value: rootValue.allValidated.value * 2 } },
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(12, GraphQLInt);
+        expect(mockValidate).toBeCalledWith(
+          12,
+          GraphQLInt,
+          AllValidatedType,
+          context,
+        );
       });
 
       it('works without validation (undefined)', async (): Promise<void> => {
@@ -343,7 +388,7 @@ directive @${name}(
           }
         `);
         mockValidate.mockClear();
-        const result = await graphql(schema, source, rootValue);
+        const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
           data: { allNotValidated: rootValue.allNotValidated },
         });
@@ -422,8 +467,10 @@ directive @${name}(
           `,
         ],
       });
+      const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const value = 1234;
+      const context = { theContext: 468 };
 
       describe('argument directives work with valid input', (): void => {
         beforeEach((): void => {
@@ -439,12 +486,17 @@ directive @${name}(
             nonNullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullable: value },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLNonNullInt,
+            getFieldArg(QueryType, 'nonNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -456,14 +508,19 @@ directive @${name}(
               nonNullable(arg: $value)
             }
           `);
-          const result = await graphql(schema, source, undefined, undefined, {
+          const result = await graphql(schema, source, undefined, context, {
             value,
           });
           expect(result).toEqual({
             data: { nonNullable: value },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLNonNullInt,
+            getFieldArg(QueryType, 'nonNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -473,7 +530,7 @@ directive @${name}(
               nonNullableEnum(arg: someOption)
             }
           `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableEnum: 'someOption' },
           });
@@ -481,6 +538,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
+            getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+            context,
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -493,7 +552,7 @@ directive @${name}(
             nonNullableListOfNonNullable(arg: [${value}, 42])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: [value, 42] },
           });
@@ -501,6 +560,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
+            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+            context,
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -511,7 +572,7 @@ directive @${name}(
             nonNullableListOfNullable(arg: [null, ${value}])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableListOfNullable: [null, value] },
           });
@@ -519,6 +580,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             [null, value],
             GraphQLNonNullIntList,
+            getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
+            context,
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -529,12 +592,17 @@ directive @${name}(
             nullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullable: value },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'nullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -544,12 +612,17 @@ directive @${name}(
               nullable(arg: null)
             }
           `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullable: null },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(null, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            null,
+            GraphQLInt,
+            getFieldArg(QueryType, 'nullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -561,12 +634,17 @@ directive @${name}(
             nullableListOfNullable(arg: [${value}, null])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullableListOfNullable: [value, null] },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith([value, null], GraphQLIntList);
+          expect(mockValidate).toBeCalledWith(
+            [value, null],
+            GraphQLIntList,
+            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -578,12 +656,17 @@ directive @${name}(
               nullableListOfNullable(arg: null)
             }
           `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(null, GraphQLIntList);
+          expect(mockValidate).toBeCalledWith(
+            null,
+            GraphQLIntList,
+            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -593,7 +676,7 @@ directive @${name}(
             notValidated(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { notValidated: value },
           });
@@ -607,7 +690,7 @@ directive @${name}(
             alsoNotValidated(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { alsoNotValidated: value },
           });
@@ -621,12 +704,17 @@ directive @${name}(
             someArgsNotValidated(arg: ${value}, notValidated: 12)
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { someArgsNotValidated: value },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -636,13 +724,23 @@ directive @${name}(
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { manyArgsValidated: value },
           });
           expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
-          expect(mockValidate).toBeCalledWith(12, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+            context,
+          );
+          expect(mockValidate).toBeCalledWith(
+            12,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
 
@@ -658,7 +756,7 @@ directive @${name}(
               }
             }
           `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: {
               deepNonNullable: {
@@ -675,6 +773,8 @@ directive @${name}(
                 schema.getType('DeepNonNullableInput') as GraphQLInputType,
               ),
             ),
+            getFieldArg(QueryType, 'deepNonNullable', 'arg'),
+            context,
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -686,12 +786,22 @@ directive @${name}(
             defaultResolver(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, { defaultResolver: 42 });
+          const result = await graphql(
+            schema,
+            source,
+            { defaultResolver: 42 },
+            context,
+          );
           expect(result).toEqual({
             data: { defaultResolver: 42 },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'defaultResolver', 'arg'),
+            context,
+          );
         });
 
         it('works with double validation', async (): Promise<void> => {
@@ -702,13 +812,23 @@ directive @${name}(
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementation(x => x * 2);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { doubleValidation: value * 4 },
           });
           expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
-          expect(mockValidate).toBeCalledWith(value * 2, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'doubleValidation', 'arg'),
+            context,
+          );
+          expect(mockValidate).toBeCalledWith(
+            value * 2,
+            GraphQLInt,
+            getFieldArg(QueryType, 'doubleValidation', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
         });
       });
@@ -737,13 +857,18 @@ directive @${name}(
               nonNullable(arg: ${value})
             }
           `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLNonNullInt,
+            getFieldArg(QueryType, 'nonNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).not.toBeCalled();
         });
 
@@ -757,13 +882,18 @@ directive @${name}(
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): void => undefined);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('validation returned undefined')],
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLNonNullInt,
+            getFieldArg(QueryType, 'nonNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).not.toBeCalled();
         });
 
@@ -777,7 +907,7 @@ directive @${name}(
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): object => ({ bug: 1 }));
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [
@@ -787,7 +917,12 @@ directive @${name}(
             ],
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLNonNullInt,
+            getFieldArg(QueryType, 'nonNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).not.toBeCalled();
         });
 
@@ -801,7 +936,7 @@ directive @${name}(
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): string => 'invalidValue');
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableEnum: null },
             errors: [
@@ -814,6 +949,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
+            getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+            context,
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -826,7 +963,7 @@ directive @${name}(
             nonNullableListOfNonNullable(arg: [${value}, 42])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
@@ -835,6 +972,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
+            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+            context,
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -849,7 +988,7 @@ directive @${name}(
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementation((): null[] => [null]);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: null }, // only arg is non-nullable!
             errors: [
@@ -860,6 +999,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
+            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+            context,
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -870,7 +1011,7 @@ directive @${name}(
             nonNullableListOfNullable(arg: [null, ${value}])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nonNullableListOfNullable: null },
             errors: [new ValidationError('forced error')],
@@ -879,6 +1020,8 @@ directive @${name}(
           expect(mockValidate).toBeCalledWith(
             [null, value],
             GraphQLNonNullIntList,
+            getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
+            context,
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -889,12 +1032,17 @@ directive @${name}(
             nullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullable: null },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'nullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
             undefined,
@@ -902,7 +1050,7 @@ directive @${name}(
               arg: null,
               validationErrors,
             },
-            undefined,
+            context,
             expect.objectContaining({}),
           );
         });
@@ -915,12 +1063,17 @@ directive @${name}(
             nullableListOfNullable(arg: [${value}, null])
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith([value, null], GraphQLIntList);
+          expect(mockValidate).toBeCalledWith(
+            [value, null],
+            GraphQLIntList,
+            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
             undefined,
@@ -928,7 +1081,7 @@ directive @${name}(
               arg: null,
               validationErrors,
             },
-            undefined,
+            context,
             expect.objectContaining({}),
           );
         });
@@ -939,12 +1092,17 @@ directive @${name}(
             someArgsNotValidated(arg: ${value}, notValidated: 12)
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { someArgsNotValidated: null },
           });
           expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
             undefined,
@@ -953,7 +1111,7 @@ directive @${name}(
               notValidated: 12,
               validationErrors,
             },
-            undefined,
+            context,
             expect.objectContaining({}),
           );
         });
@@ -966,13 +1124,23 @@ directive @${name}(
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
           }
         `);
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
           expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
-          expect(mockValidate).toBeCalledWith(12, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+            context,
+          );
+          expect(mockValidate).toBeCalledWith(
+            12,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
             undefined,
@@ -981,7 +1149,7 @@ directive @${name}(
               arg: null,
               validationErrors,
             },
-            undefined,
+            context,
             expect.objectContaining({}),
           );
         });
@@ -997,13 +1165,23 @@ directive @${name}(
           mockValidate.mockImplementationOnce((): void => {
             throw new ValidationError('other error');
           });
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
           expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(value, GraphQLInt);
-          expect(mockValidate).toBeCalledWith(12, GraphQLInt);
+          expect(mockValidate).toBeCalledWith(
+            value,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+            context,
+          );
+          expect(mockValidate).toBeCalledWith(
+            12,
+            GraphQLInt,
+            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+            context,
+          );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
             undefined,
@@ -1019,7 +1197,7 @@ directive @${name}(
                 },
               ],
             },
-            undefined,
+            context,
             expect.objectContaining({}),
           );
         });
@@ -1043,7 +1221,7 @@ directive @${name}(
             // force deep failure, this must force the element to become null
             (): object => [{ nonNullable: null }],
           );
-          const result = await graphql(schema, source);
+          const result = await graphql(schema, source, undefined, context);
           expect(result).toEqual({
             data: {
               deepNonNullable: {
@@ -1065,6 +1243,8 @@ directive @${name}(
                 schema.getType('DeepNonNullableInput') as GraphQLInputType,
               ),
             ),
+            getFieldArg(QueryType, 'deepNonNullable', 'arg'),
+            context,
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -1160,8 +1340,9 @@ directive @${name}(
           }
         }
       `);
+      const context = { theContext: 128 };
 
-      const result = await graphql(schema, source);
+      const result = await graphql(schema, source, undefined, context);
       expect(result).toEqual({
         data: {
           deepNonNullable: {
@@ -1171,7 +1352,12 @@ directive @${name}(
         },
       });
       expect(mockValidate).toBeCalledTimes(1);
-      expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+      expect(mockValidate).toBeCalledWith(
+        value,
+        GraphQLNonNullInt,
+        schema.getType('DeepNonNullableInput'),
+        context,
+      );
       expect(mockResolver).toBeCalledTimes(1);
     });
 
@@ -1216,6 +1402,7 @@ directive @${name}(
           ],
         }),
       );
+      const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const source = print(gql`
         query {
@@ -1230,10 +1417,11 @@ directive @${name}(
           }
         }
       `);
+      const context = { theContext: 256 };
 
       mockValidate.mockClear();
       mockResolver.mockClear();
-      const result = await graphql(schema, source);
+      const result = await graphql(schema, source, undefined, context);
       expect(result).toEqual({
         data: {
           deepNullable: {
@@ -1243,10 +1431,17 @@ directive @${name}(
         },
       });
       expect(mockValidate).toBeCalledTimes(2);
-      expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+      expect(mockValidate).toBeCalledWith(
+        value,
+        GraphQLInt,
+        schema.getType('DeepNullableInput'),
+        context,
+      );
       expect(mockValidate).toBeCalledWith(
         { list: [1] },
         schema.getType('NoValidatedFields') as GraphQLInputType,
+        getFieldArg(QueryType, 'deepNullable', 'other'),
+        context,
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
@@ -1288,6 +1483,7 @@ directive @${name}(
           ],
         }),
       );
+      const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const source = print(gql`
         query {
@@ -1302,6 +1498,7 @@ directive @${name}(
           }
         }
       `);
+      const context = { theContext: 1024 };
 
       mockValidate.mockReset();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1311,7 +1508,7 @@ directive @${name}(
         return x;
       });
       mockResolver.mockClear();
-      const result = await graphql(schema, source);
+      const result = await graphql(schema, source, undefined, context);
       expect(result).toEqual({
         data: {
           test: {
@@ -1321,11 +1518,23 @@ directive @${name}(
         },
       });
       expect(mockValidate).toBeCalledTimes(3);
-      expect(mockValidate).toBeCalledWith(value, GraphQLInt);
-      expect(mockValidate).toBeCalledWith(value * 2, GraphQLInt);
+      expect(mockValidate).toBeCalledWith(
+        value,
+        GraphQLInt,
+        schema.getType('TestInput'),
+        context,
+      );
+      expect(mockValidate).toBeCalledWith(
+        value * 2,
+        GraphQLInt,
+        schema.getType('TestInput'),
+        context,
+      );
       expect(mockValidate).toBeCalledWith(
         { value: value * 4 },
         schema.getType('TestInput') as GraphQLInputType,
+        getFieldArg(QueryType, 'test', 'arg'),
+        context,
       );
       expect(mockResolver).toBeCalledTimes(1);
     });

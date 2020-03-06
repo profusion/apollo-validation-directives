@@ -1,4 +1,9 @@
-import { GraphQLInt, GraphQLList, GraphQLNonNull } from 'graphql';
+import {
+  GraphQLInt,
+  GraphQLList,
+  GraphQLNonNull,
+  GraphQLObjectType,
+} from 'graphql';
 
 import validateArrayOrValue from './validateArrayOrValue';
 
@@ -19,6 +24,11 @@ describe('validateArrayOrValue', (): void => {
 
   const value = 123;
   const array = [value, value * 2];
+  const container = new GraphQLObjectType({
+    fields: {},
+    name: 'container',
+  });
+  const context = { theContext: 1234 };
 
   beforeEach(() => {
     mockValidate.mockReset();
@@ -26,58 +36,95 @@ describe('validateArrayOrValue', (): void => {
   });
 
   it('works with value', (): void => {
-    expect(validateArrayOrValue(mockValidate)(value, GraphQLInt)).toBe(value);
+    expect(
+      validateArrayOrValue(mockValidate)(value, GraphQLInt, container, context),
+    ).toBe(value);
     expect(mockValidate).toBeCalledTimes(1);
-    expect(mockValidate).toBeCalledWith(value, GraphQLInt);
+    expect(mockValidate).toBeCalledWith(value, GraphQLInt, container, context);
   });
 
   it('works with non-null value', (): void => {
-    expect(validateArrayOrValue(mockValidate)(value, GraphQLNonNullInt)).toBe(
-      value,
-    );
+    expect(
+      validateArrayOrValue(mockValidate)(
+        value,
+        GraphQLNonNullInt,
+        container,
+        context,
+      ),
+    ).toBe(value);
     expect(mockValidate).toBeCalledTimes(1);
-    expect(mockValidate).toBeCalledWith(value, GraphQLNonNullInt);
+    expect(mockValidate).toBeCalledWith(
+      value,
+      GraphQLNonNullInt,
+      container,
+      context,
+    );
   });
 
   it('works with simple array and list', (): void => {
     // equal not be: array is `map()`, result is a new array
-    expect(validateArrayOrValue(mockValidate)(array, GraphQLIntList)).toEqual(
-      array,
-    );
+    expect(
+      validateArrayOrValue(mockValidate)(
+        array,
+        GraphQLIntList,
+        container,
+        context,
+      ),
+    ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt),
+      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
     );
   });
 
   it('works with simple array and non-null list type', (): void => {
     expect(
-      validateArrayOrValue(mockValidate)(array, GraphQLNonNullIntList),
+      validateArrayOrValue(mockValidate)(
+        array,
+        GraphQLNonNullIntList,
+        container,
+        context,
+      ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt),
+      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
     );
   });
 
   it('works with simple array and non-null list of non-null type', (): void => {
     expect(
-      validateArrayOrValue(mockValidate)(array, GraphQLNonNullIntListNonNull),
+      validateArrayOrValue(mockValidate)(
+        array,
+        GraphQLNonNullIntListNonNull,
+        container,
+        context,
+      ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLNonNullInt),
+      expect(mockValidate).toBeCalledWith(
+        item,
+        GraphQLNonNullInt,
+        container,
+        context,
+      ),
     );
   });
 
   it('works array of array and list of list', (): void => {
     // equal not be: array is `map()`, result is a new array
     expect(
-      validateArrayOrValue(mockValidate)([array], GraphQLIntListList),
+      validateArrayOrValue(mockValidate)(
+        [array],
+        GraphQLIntListList,
+        container,
+        context,
+      ),
     ).toEqual([array]);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt),
+      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
     );
   });
 
@@ -86,12 +133,12 @@ describe('validateArrayOrValue', (): void => {
     // let's handle just in case (getListItemType 'GraphQLList' else condition)
 
     // equal not be: array is `map()`, result is a new array
-    expect(validateArrayOrValue(mockValidate)(array, GraphQLInt)).toEqual(
-      array,
-    );
+    expect(
+      validateArrayOrValue(mockValidate)(array, GraphQLInt, container, context),
+    ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt),
+      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
     );
   });
 

@@ -21,33 +21,40 @@ import { ValidationError } from 'apollo-server-errors';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
-export type ValidateFunction = (
+export type ValidateFunction<TContext = object> = (
   value: unknown,
   type: GraphQLNamedType | GraphQLInputType,
+  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  context: TContext,
 ) => unknown;
 
 type ValidatedContainerMustValidateInput = {
   mustValidateInput?: boolean;
 };
 
-export type ValidatedArgumentsGraphQLField = GraphQLField<unknown, unknown> &
+export type ValidatedArgumentsGraphQLField<TContext = object> = GraphQLField<
+  unknown,
+  TContext
+> &
   ValidatedContainerMustValidateInput;
 export type ValidatedGraphQLInputObjectType = GraphQLInputObjectType &
   ValidatedContainerMustValidateInput;
 
-type ValidatedEntryExtension = {
-  validation?: ValidateFunction;
+type ValidatedEntryExtension<TContext = object> = {
+  validation?: ValidateFunction<TContext>;
 };
 
-export type ValidatedGraphQLArgument = GraphQLArgument &
-  ValidatedEntryExtension;
-export type ValidatedGraphQLInputField = GraphQLInputField &
-  ValidatedEntryExtension;
+export type ValidatedGraphQLArgument<TContext = object> = GraphQLArgument &
+  ValidatedEntryExtension<TContext>;
+export type ValidatedGraphQLInputField<TContext = object> = GraphQLInputField &
+  ValidatedEntryExtension<TContext>;
 
-type ValidatedContainer =
+type ValidatedContainer<TContext> =
   | ValidatedGraphQLInputObjectType
-  | ValidatedArgumentsGraphQLField;
-type ValidatedEntry = ValidatedGraphQLInputField | ValidatedGraphQLArgument;
+  | ValidatedArgumentsGraphQLField<TContext>;
+type ValidatedEntry<TContext = object> =
+  | ValidatedGraphQLInputField<TContext>
+  | ValidatedGraphQLArgument<TContext>;
 
 /**
  * Mark the container as requiring validation and optionally define a
@@ -64,10 +71,10 @@ type ValidatedEntry = ValidatedGraphQLInputField | ValidatedGraphQLArgument;
  * @param validate the entry validation function or `undefined` to
  *        do nothing special.
  */
-export const addContainerEntryValidation = (
-  container: ValidatedContainer,
-  entry: ValidatedEntry,
-  validate: ValidateFunction | undefined,
+export const addContainerEntryValidation = <TContext>(
+  container: ValidatedContainer<TContext>,
+  entry: ValidatedEntry<TContext>,
+  validate: ValidateFunction<TContext> | undefined,
 ): void => {
   // eslint-disable-next-line no-param-reassign
   container.mustValidateInput = true;
@@ -83,8 +90,8 @@ export const addContainerEntryValidation = (
   entry.validation =
     previousValidation === undefined
       ? validate
-      : (value: unknown, type: GraphQLNamedType | GraphQLInputType): unknown =>
-          validate(previousValidation(value, type), type);
+      : (value: unknown, ...rest): unknown =>
+          validate(previousValidation(value, ...rest), ...rest);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,13 +163,15 @@ const checkMustValidateInput = (
 };
 
 // modifies `container` in-place if the validated value changed!
-const validateContainerEntry = (
+const validateContainerEntry = <TContext>(
   container: AnyObject,
   entry: number | string,
   type: GraphQLInputType,
-  validation: ValidateFunction | undefined,
+  validation: ValidateFunction<TContext> | undefined,
   path: string[],
   errors: ValidatedInputError[],
+  containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  context: TContext,
 ): void => {
   const originalValue = container[entry];
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -172,6 +181,8 @@ const validateContainerEntry = (
     validation,
     path.concat([entry.toString()]),
     errors,
+    containerType,
+    context,
   );
   if (validatedValue !== originalValue) {
     // eslint-disable-next-line no-param-reassign
@@ -180,30 +191,41 @@ const validateContainerEntry = (
 };
 
 // it will change the args in-place!
-const validateFieldArguments = (
+const validateFieldArguments = <TContext>(
   args: AnyObject,
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
+  context: TContext,
 ): void => {
   const path: string[] = [];
   const errors: ValidatedInputError[] =
     args[validationErrorsArgumentName] || [];
 
-  definitions.forEach(
-    ({ name, type, validation }: ValidatedGraphQLArgument): void =>
-      validateContainerEntry(args, name, type, validation, path, errors),
-  );
+  definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
+    const { name, type, validation } = arg;
+    validateContainerEntry(
+      args,
+      name,
+      type,
+      validation,
+      path,
+      errors,
+      arg,
+      context,
+    );
+  });
 
   // eslint-disable-next-line no-param-reassign
   args[validationErrorsArgumentName] = errors.length > 0 ? errors : null;
 };
 
 // it will change the object in-place!
-const validateInputObject = (
+const validateInputObject = <TContext>(
   obj: AnyObject,
   objectType: ValidatedGraphQLInputObjectType,
   path: string[],
   errors: ValidatedInputError[],
+  context: TContext,
 ): AnyObject => {
   if (!checkMustValidateInput(objectType) && !containsNonNull(objectType)) {
     return obj;
@@ -211,19 +233,31 @@ const validateInputObject = (
 
   Object.values(
     objectType.getFields(),
-  ).forEach(({ name, type, validation }: ValidatedGraphQLInputField): void =>
-    validateContainerEntry(obj, name, type, validation, path, errors),
+  ).forEach(
+    ({ name, type, validation }: ValidatedGraphQLInputField<TContext>): void =>
+      validateContainerEntry(
+        obj,
+        name,
+        type,
+        validation,
+        path,
+        errors,
+        objectType,
+        context,
+      ),
   );
 
   return obj;
 };
 
 // it will change the array in-place!
-const validateList = (
+const validateList = <TContext>(
   array: AnyArray,
   itemType: GraphQLInputType & ValidatedContainerMustValidateInput,
   path: string[],
   errors: ValidatedInputError[],
+  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  context: TContext,
 ): AnyArray => {
   if (!checkMustValidateInput(itemType) && !containsNonNull(itemType)) {
     return array;
@@ -231,7 +265,16 @@ const validateList = (
 
   const { length } = array;
   for (let i = 0; i < length; i += 1) {
-    validateContainerEntry(array, i, itemType, undefined, path, errors);
+    validateContainerEntry(
+      array,
+      i,
+      itemType,
+      undefined,
+      path,
+      errors,
+      container,
+      context,
+    );
   }
 
   return array;
@@ -248,18 +291,20 @@ const validateNonNull = (value: unknown, type: GraphQLInputType): unknown => {
 // See validateEntryValue() for the version that tries
 // to catch and replace with `null` if nullable, then
 // appends to errors.
-const validateEntryValueThrowing = (
+const validateEntryValueThrowing = <TContext>(
   originalValue: unknown,
   originalType: GraphQLInputType,
-  validation: ValidateFunction | undefined,
+  validation: ValidateFunction<TContext> | undefined,
   path: string[],
   errors: ValidatedInputError[],
+  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  context: TContext,
 ): unknown => {
   let type = originalType;
   let value = originalValue;
 
   if (validation) {
-    value = validation(value, originalType);
+    value = validation(value, originalType, container, context);
     if (value === undefined) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');
@@ -277,14 +322,21 @@ const validateEntryValueThrowing = (
 
   if (type instanceof GraphQLInputObjectType) {
     return validateNonNull(
-      validateInputObject(value as AnyObject, type, path, errors),
+      validateInputObject(value as AnyObject, type, path, errors, context),
       originalType,
     );
   }
 
   if (type instanceof GraphQLList) {
     return validateNonNull(
-      validateList(value as AnyArray, type.ofType, path, errors),
+      validateList(
+        value as AnyArray,
+        type.ofType,
+        path,
+        errors,
+        container,
+        context,
+      ),
       originalType,
     );
   }
@@ -310,12 +362,14 @@ const isErrorRegistered = (
 
 // Validates and catches exceptions, replacing values that failed validation
 // with `null` if the type is null-able (in such case, appends to `errors`)
-const validateEntryValue = (
+const validateEntryValue = <TContext>(
   originalValue: unknown,
   type: GraphQLInputType,
-  validation: ValidateFunction | undefined,
+  validation: ValidateFunction<TContext> | undefined,
   path: string[],
   errors: ValidatedInputError[],
+  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  context: TContext,
 ): unknown => {
   try {
     return validateEntryValueThrowing(
@@ -324,6 +378,8 @@ const validateEntryValue = (
       validation,
       path,
       errors,
+      container,
+      context,
     );
   } catch (error) {
     if (!isErrorRegistered(errors, error)) {
@@ -391,8 +447,8 @@ const validatedErrorOutputType = new GraphQLObjectType({
 
 // makes sure the field.args contains a `$validationErrorsArgumentName`
 // argument with `validatedInputErrorListType` type.
-const addValidationErrorsArgumentDeclaration = (
-  field: GraphQLField<unknown, unknown>,
+const addValidationErrorsArgumentDeclaration = <TContext>(
+  field: GraphQLField<unknown, TContext>,
   validationErrorsArgumentName: string,
 ): void => {
   const validationErrorsArg = field.args.find(
@@ -419,10 +475,10 @@ const addValidationErrorsArgumentDeclaration = (
 // already, then declare the `$validationErrorsArgumentName` argument and
 // wrap the field resolver so it first validates the arguments before
 // calling the wrapped resolver.
-const wrapFieldResolverValidateArgument = (
-  field: ValidatedArgumentsGraphQLField,
+const wrapFieldResolverValidateArgument = <TContext>(
+  field: ValidatedArgumentsGraphQLField<TContext>,
   argument: GraphQLArgument,
-  validate: ValidateFunction | undefined,
+  validate: ValidateFunction<TContext> | undefined,
   validationErrorsArgumentName: string,
 ): void => {
   const { mustValidateInput: alreadyValidated = false } = field;
@@ -439,7 +495,12 @@ const wrapFieldResolverValidateArgument = (
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
   field.resolve = function(...args): Promise<unknown> {
-    validateFieldArguments(args[1], field.args, validationErrorsArgumentName);
+    validateFieldArguments(
+      args[1],
+      field.args,
+      validationErrorsArgumentName,
+      args[2],
+    );
     return resolve.apply(this, args);
   };
 };
@@ -448,15 +509,16 @@ const wrapFieldResolverValidateArgument = (
 // If this function is called multiple times for the same field
 // the validation will be chained:
 // validate(previousValidation(resolvedValue))`
-const wrapFieldResolverResult = (
-  field: GraphQLField<unknown, unknown>,
-  validate: ValidateFunction,
+const wrapFieldResolverResult = <TContext>(
+  field: GraphQLField<unknown, TContext>,
+  validate: ValidateFunction<TContext>,
+  objectType: GraphQLObjectType,
 ): void => {
   const { resolve = defaultFieldResolver, type } = field;
   // eslint-disable-next-line no-param-reassign
   field.resolve = async function(...args): Promise<unknown> {
     const originalValue = await resolve.apply(this, args);
-    const validatedValue = validate(originalValue, type);
+    const validatedValue = validate(originalValue, type, objectType, args[2]);
     if (validatedValue === undefined) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');
@@ -484,22 +546,24 @@ const markInputObjectsRequiringValidation = (
 // Fields that have argument may require validation if their input
 // object requires it (see markInputObjectsRequiringValidation()),
 // even if the argument itself does not have a validation function.
-const wrapFieldsRequiringValidation = (
-  fieldsWithArguments: GraphQLField<unknown, unknown>[],
+const wrapFieldsRequiringValidation = <TContext>(
+  fieldsWithArguments: GraphQLField<unknown, TContext>[],
   validationErrorsArgumentName: string,
 ): void =>
-  fieldsWithArguments.forEach((field: ValidatedArgumentsGraphQLField): void => {
-    field.args.forEach((arg: ValidatedGraphQLArgument): void => {
-      if (checkMustValidateInput(arg.type)) {
-        wrapFieldResolverValidateArgument(
-          field,
-          arg,
-          undefined,
-          validationErrorsArgumentName,
-        );
-      }
-    });
-  });
+  fieldsWithArguments.forEach(
+    (field: ValidatedArgumentsGraphQLField<TContext>): void => {
+      field.args.forEach((arg: ValidatedGraphQLArgument): void => {
+        if (checkMustValidateInput(arg.type)) {
+          wrapFieldResolverValidateArgument(
+            field,
+            arg,
+            undefined,
+            validationErrorsArgumentName,
+          );
+        }
+      });
+    },
+  );
 
 const collectInputObjectsAndFieldsWithArguments = (
   schema: GraphQLSchema,
@@ -564,7 +628,8 @@ const collectInputObjectsAndFieldsWithArguments = (
  * will throw and the wrapped resolver won't be called.
  */
 abstract class ValidateDirectiveVisitor<
-  TArgs extends object
+  TArgs extends object,
+  TContext = object
 > extends EasyDirectiveVisitor<TArgs> {
   public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] = [
     validatedInputErrorListType,
@@ -645,7 +710,9 @@ abstract class ValidateDirectiveVisitor<
    *  - `null` for nullable fields;
    *  - `Array` for list fields.
    */
-  public abstract getValidationForArgs(): ValidateFunction | undefined;
+  public abstract getValidationForArgs():
+    | ValidateFunction<TContext>
+    | undefined;
 
   // Arguments directly annotated with the directive, such as
   //
@@ -714,17 +781,24 @@ abstract class ValidateDirectiveVisitor<
   // and call the validation on the resolved value, this is done by:
   // wrapFieldResolverResult()
 
-  public visitFieldDefinition(field: GraphQLField<unknown, unknown>): void {
+  public visitFieldDefinition(
+    field: GraphQLField<unknown, TContext>,
+    {
+      objectType,
+    }: {
+      objectType: GraphQLObjectType;
+    },
+  ): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
-    wrapFieldResolverResult(field, validate);
+    wrapFieldResolverResult(field, validate, objectType);
   }
 
   public visitObject(object: GraphQLObjectType | GraphQLInterfaceType): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
     Object.values(object.getFields()).forEach(field =>
-      wrapFieldResolverResult(field, validate),
+      wrapFieldResolverResult(field, validate, object as GraphQLObjectType),
     );
   }
 }

@@ -17,33 +17,34 @@ const getListItemType = (
 };
 
 // regular usage:
-function validateArrayOrValue(
-  valueValidator: ValidateFunction,
-): ValidateFunction;
+function validateArrayOrValue<TContext = object>(
+  valueValidator: ValidateFunction<TContext>,
+): ValidateFunction<TContext>;
 // make it easy to use in cases validator is created and may be undefined
 function validateArrayOrValue(valueValidator: undefined): undefined;
-function validateArrayOrValue(
-  valueValidator: undefined | ValidateFunction,
-): undefined | ValidateFunction;
+function validateArrayOrValue<TContext = object>(
+  valueValidator: undefined | ValidateFunction<TContext>,
+): undefined | ValidateFunction<TContext>;
 
 // function overload cannot be done on arrow-style
 // eslint-disable-next-line func-style
-function validateArrayOrValue(
-  valueValidator: ValidateFunction | undefined,
-): ValidateFunction | undefined {
+function validateArrayOrValue<TContext = object>(
+  valueValidator: ValidateFunction<TContext> | undefined,
+): ValidateFunction<TContext> | undefined {
   if (!valueValidator) {
     return undefined;
   }
 
-  const validate = (
+  const validate: ValidateFunction<TContext> = (
     value: unknown,
     type: GraphQLNamedType | GraphQLInputType,
+    ...rest
   ): unknown => {
     if (Array.isArray(value)) {
       const itemType = getListItemType(type);
-      return value.map(item => validate(item, itemType));
+      return value.map(item => validate(item, itemType, ...rest));
     }
-    return valueValidator(value, type);
+    return valueValidator(value, type, ...rest);
   };
 
   return validate;
