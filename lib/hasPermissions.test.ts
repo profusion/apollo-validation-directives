@@ -271,6 +271,10 @@ enum HasPermissionsDirectivePolicy {
             maskedEmail: createEmailResolver('maskedEmail'),
             secondMaskedEmail: createEmailResolver('secondMaskedEmail'),
           },
+          TwoResolver: {
+            missingPermissions: (_, { missingPermissions }): string[] | null =>
+              missingPermissions,
+          },
         },
         schemaDirectives: {
           [name]: HasPermissionsDirectiveVisitor,
@@ -285,8 +289,12 @@ enum HasPermissionsDirectivePolicy {
               maskedEmail: String @${name}(permissions: ["z"], policy: RESOLVER)
               secondMaskedEmail: String @${name}(permissions: ["xpto"], policy: RESOLVER)
             }
+            type TwoResolver @${name}(permissions: ["y"], policy: RESOLVER) {
+              missingPermissions: [String! ]@${name}(permissions: ["z"], policy: RESOLVER)
+            }
             type Query {
               test: MyRestrictedObject
+              twoResolver: TwoResolver
             }
           `,
         ],
@@ -432,6 +440,34 @@ enum HasPermissionsDirectivePolicy {
             },
           },
           errors: [new ForbiddenError('Missing Permissions: y')],
+        });
+      });
+
+      it('two policy: RESOLVER missing permissions', async (): Promise<
+        void
+      > => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x'],
+        });
+        const result = await graphql(
+          schema,
+          print(gql`
+            query {
+              twoResolver {
+                missingPermissions
+              }
+            }
+          `),
+          { twoResolver: {} },
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            twoResolver: {
+              missingPermissions: ['y', 'z'],
+            },
+          },
         });
       });
     });
