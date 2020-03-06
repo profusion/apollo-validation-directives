@@ -308,3 +308,133 @@ input SomeInput {
   flagsAreSupported: String! @pattern(regexp: "[a-z]+", flags: "i")
 }
 ```
+
+### Relay (Global) Node ID Support
+
+This package exposes two directives to convert IDs encode and decode Relay's
+[Node](https://facebook.github.io/relay/graphql/objectidentification.htm) interface.
+For instance, this plays well with https://github.com/profusion/apollo-federation-node-gateway
+that will collect all the types implementing the Node interface as integers
+so the encoded id is both small and avoid leaking internal details.
+
+### `@selfNodeId`
+
+The `@selfNodeId` uses the context-provided `toNodeId()` function
+and throws `ValidationError` if that returns `null` and can be
+used to encode an ID to a global Node ID.
+
+It can be used on any field String or an ID field and
+the typename used to encode will be the type which
+the field belongs to. It can be also used in an object,
+which will this case automatically annotate the `id` field.
+
+The context must provide `toNodeId()` and this function will
+be called with the following arguments. This function receives two
+arguments, which are:
+ * typename: A string which contains the typename
+ * id: The ID itself
+After this function executes, it should return an encoded node ID.
+
+GraphQL schema usage:
+
+```gql
+type SomeObject {
+  id: ID! @selfNodeId
+}
+
+type MyAuthenticatedObject @selfNodeId {
+  id: ID! # This field will be wrapped and a global node ID will be returned
+}
+```
+
+Code:
+
+```typescript
+import { selfNodeId } from 'apollo-validation-directives';
+
+const server = new ApolloServer({
+  resolvers,
+  schemaDirectives: { selfNodeId },
+  typeDefs: [
+    ...yourTypeDefs,
+    ...selfNodeId.getTypeDefs(),
+  ],
+  context: () => {
+    return selfNodeId.createDirectiveContext({
+      toNodeId: (typename, id) => Buffer.from(`${typename}:${id}`).toString('base64'),
+    });
+  },
+});
+```
+
+### `@foreignNodeId`
+
+The `@foreignNodeId` can be used to and can be
+used to decode a global Node ID to an ID.
+It uses the context-provided `fromNodeId()` function
+and throws `ValidationError` if that returns `null`, otherwise
+it should return a object with the following interface:
+
+```typescript
+interface FromNodeIdReturnType {
+  typename: string; // The typename for the decoded ID
+  id: string; // The decoded ID
+}
+```
+
+In case the returned `typename` does not match the one
+provided via args to the `@foreignNodeId` directive a
+`ValidationError` will be thrown.
+
+This directive has an required argument called `typename`
+which will be used to validate if the `fromNodeId()` function
+decoded the global Node ID correctly.
+
+This directive can be used on query/mutation arguments
+or in input field definitions which matches the ID/string type.
+
+The context must provide `fromNodeId()` and this function will
+be called the encoded node id as returned by `toNodeId()` from the
+`@selfNodeId` directive.
+
+GraphQL schema usage:
+
+```gql
+input InputType {
+  myId: ID! @foreignNodeId(typename: "X")
+  otherId: ID! @foreignNodeId(typename: "Y")
+  yetAnotherId: ID! @foreignNodeId(typename: "Z")
+}
+
+type Query {
+  work(input: InputType!, id: ID! @foreignNodeId(typename: "I"))
+}
+```
+
+Code:
+
+```typescript
+import { foreignNodeId } from 'apollo-validation-directives';
+
+const server = new ApolloServer({
+  resolvers,
+  schemaDirectives: { foreignNodeId },
+  typeDefs: [
+    ...yourTypeDefs,
+    ...foreignNodeId.getTypeDefs(),
+  ],
+  context: () => {
+    return foreignNodeId.createDirectiveContext({
+      fromNodeId: (id) => {
+        const r = Buffer.from(id, 'base64')
+          .toString('ascii')
+          .split(':');
+        return {
+          id: r[1],
+          typename: r[0],
+        };
+      },
+    });
+  },
+});
+```

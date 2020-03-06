@@ -13,3 +13,5 @@ export { default as listLength } from './listLength';
 export { default as pattern } from './pattern';
 export { default as range } from './range';
 export { default as stringLength } from './stringLength';
+export { default as selfNodeId } from './selfNodeId';
+export { default as foreignNodeId } from './foreignNodeId';

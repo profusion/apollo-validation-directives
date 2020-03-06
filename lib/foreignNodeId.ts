@@ -1,0 +1,71 @@
+import { DirectiveLocation, GraphQLNonNull, GraphQLString } from 'graphql';
+import { ValidationError } from 'apollo-server-errors';
+
+import ValidateDirectiveVisitor, {
+  ValidateFunction,
+} from './ValidateDirectiveVisitor';
+
+export type ToNodeId<IdType> = (
+  id: string,
+) => { typename: string; id: IdType } | null;
+
+export type ForeignNodeIdContext<
+  IdType = string,
+  TContext extends object = object
+> = {
+  fromNodeId: ToNodeId<IdType>;
+};
+
+export type Args = {
+  typename: string;
+};
+
+export default class ForeignNodeIdDirective<
+  IdType,
+  TContext extends ForeignNodeIdContext<IdType>
+> extends ValidateDirectiveVisitor<Args, ForeignNodeIdContext<IdType>> {
+  public getValidationForArgs():
+    | ValidateFunction<ForeignNodeIdContext<IdType>>
+    | undefined {
+    const { typename } = this.args;
+    const wrongUsageErrorMessage = `${this.name} directive only works on strings`;
+    const wrongTypeNameErrorMessage = `Converted ID typename does not match. Expected: ${typename}`;
+    const couldNotDecodeErrorMessage = `Could not decode ID to ${typename}`;
+    return (value: unknown, _, __, { fromNodeId }): IdType => {
+      if (typeof value !== 'string') {
+        throw new ValidationError(wrongUsageErrorMessage);
+      }
+      const decodedId = fromNodeId(value);
+      if (!decodedId) {
+        throw new ValidationError(couldNotDecodeErrorMessage);
+      }
+      const { id, typename: fromNodeTypeName } = decodedId;
+      if (fromNodeTypeName !== typename) {
+        throw new ValidationError(wrongTypeNameErrorMessage);
+      }
+      return id;
+    };
+  }
+
+  public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
+    args: {
+      typename: {
+        description: 'The typename that this ID should match',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+    },
+    description: 'Converts a global unique ID to a type ID',
+    locations: [
+      DirectiveLocation.ARGUMENT_DEFINITION,
+      DirectiveLocation.INPUT_FIELD_DEFINITION,
+    ],
+  };
+
+  public static readonly defaultName: string = 'foreignNodeId';
+
+  public static createDirectiveContext<IdType = string>(ctx: {
+    fromNodeId: ToNodeId<IdType>;
+  }): ForeignNodeIdContext<IdType> {
+    return ctx;
+  }
+}
