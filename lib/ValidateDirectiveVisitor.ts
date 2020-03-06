@@ -509,7 +509,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
 // If this function is called multiple times for the same field
 // the validation will be chained:
 // validate(previousValidation(resolvedValue))`
-const wrapFieldResolverResult = <TContext>(
+export const wrapFieldResolverResult = <TContext>(
   field: GraphQLField<unknown, TContext>,
   validate: ValidateFunction<TContext>,
   objectType: GraphQLObjectType,
