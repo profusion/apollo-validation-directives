@@ -5,7 +5,6 @@
     },
     "plugins": [
         "@typescript-eslint",
-        "filenames",
         "import"
     ],
     "parser": "@typescript-eslint/parser",
@@ -46,18 +45,6 @@
             {
                 "argsIgnorePattern": "^_"
             }
-        ],
-        "filenames/match-exported": [
-            "error",
-            [
-                null,
-                "kebab"
-            ]
-        ],
-        "filenames/match-regex": [
-            "error",
-            "^[a-zA-Z]+(-[a-z]+)*(\\.[a-z]+)?$",
-            true
         ],
         "func-names": [
             2,
