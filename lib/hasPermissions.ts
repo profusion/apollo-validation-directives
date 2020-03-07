@@ -1,4 +1,3 @@
-// eslint-disable-next-line filenames/match-exported
 import { ForbiddenError } from 'apollo-server-errors';
 import {
   defaultFieldResolver,
