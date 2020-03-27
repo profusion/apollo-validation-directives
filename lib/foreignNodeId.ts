@@ -4,6 +4,7 @@ import { ValidationError } from 'apollo-server-errors';
 import ValidateDirectiveVisitor, {
   ValidateFunction,
 } from './ValidateDirectiveVisitor';
+import validateArrayOrValue from './validateArrayOrValue';
 
 export type ToNodeId<IdType> = (
   id: string,
@@ -31,7 +32,12 @@ export default class ForeignNodeIdDirective<
     const wrongUsageErrorMessage = `${this.name} directive only works on strings`;
     const wrongTypeNameErrorMessage = `Converted ID typename does not match. Expected: ${typename}`;
     const couldNotDecodeErrorMessage = `Could not decode ID to ${typename}`;
-    return (value: unknown, _, __, { fromNodeId }): IdType => {
+    const itemValidate = (
+      value: unknown,
+      _: unknown,
+      __: unknown,
+      { fromNodeId }: ForeignNodeIdContext<IdType>,
+    ): IdType => {
       if (typeof value !== 'string') {
         throw new ValidationError(wrongUsageErrorMessage);
       }
@@ -45,6 +51,7 @@ export default class ForeignNodeIdDirective<
       }
       return id;
     };
+    return validateArrayOrValue(itemValidate);
   }
 
   public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
