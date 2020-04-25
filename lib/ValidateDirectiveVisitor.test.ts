@@ -1382,8 +1382,20 @@ directive @${name}(
                 arg: [DeepNullableEntry]
                 validationErrors: [ValidatedInputErrorOutput!]
               }
+              input YetAnotherInput {
+                number: Int
+              }
+              input Args {
+                field: String!
+                moreInputs: YetAnotherInput
+              }
+              input NullableSubInput {
+                field1: Args
+                field2: Args
+              }
               input DeepNullableInput {
                 nullable: Int @${name}
+                nullable2: NullableSubInput
               }
               input NoValidatedFields {
                 # a validated argument without validated list arguments
