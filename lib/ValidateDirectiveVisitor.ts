@@ -173,6 +173,7 @@ const validateContainerEntry = <TContext>(
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
 ): void => {
+  if (!container) return;
   const originalValue = container[entry];
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   const validatedValue = validateEntryValue(
