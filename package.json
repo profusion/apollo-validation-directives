@@ -59,6 +59,6 @@
     "apollo-server-errors": "^2.3.4",
     "graphql": "^14.6.0",
     "graphql-tag": "^2.10.3",
-    "graphql-tools": "^4.0.7"
+    "graphql-tools": "4.0.7"
   }
 }
