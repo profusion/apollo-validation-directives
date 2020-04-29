@@ -9,6 +9,8 @@ called after pre-conditions are met.
 # Installation
 ```sh
 $ npm i @profusion/apollo-validation-directives
+
+$ yarn add @profusion/apollo-validation-directives
 ```
 
 # Helpers
