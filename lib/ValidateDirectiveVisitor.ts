@@ -173,6 +173,7 @@ const validateContainerEntry = <TContext>(
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
 ): void => {
+  // istanbul ignore if  (shouldn't reach)
   if (!container) return;
   const originalValue = container[entry];
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -201,7 +202,6 @@ const validateFieldArguments = <TContext>(
   const path: string[] = [];
   const errors: ValidatedInputError[] =
     args[validationErrorsArgumentName] || [];
-
   definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
     const { name, type, validation } = arg;
     validateContainerEntry(
@@ -317,8 +317,8 @@ const validateEntryValueThrowing = <TContext>(
     type = type.ofType;
   }
 
-  if (value === null) {
-    return null;
+  if (value === null || value === undefined) {
+    return value;
   }
 
   if (type instanceof GraphQLInputObjectType) {
