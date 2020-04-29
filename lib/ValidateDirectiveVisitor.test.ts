@@ -1396,6 +1396,8 @@ directive @${name}(
               input DeepNullableInput {
                 nullable: Int @${name}
                 nullable2: NullableSubInput
+                nullableString: String
+                nullableStringNotSet: String
               }
               input NoValidatedFields {
                 # a validated argument without validated list arguments
@@ -1418,7 +1420,7 @@ directive @${name}(
 
       const source = print(gql`
         query {
-          deepNullable(arg: [{ nullable: ${value} }], other: { list: [1] }) {
+          deepNullable(arg: [{ nullable: ${value}, nullableString: null }], other: { list: [1] }) {
             arg {
               nullable
             }
