@@ -6,6 +6,12 @@ the Apollo Server.
 These are useful to both document the schema, making it clear what is
 expected, and ease the resolver implementation since it will only be
 called after pre-conditions are met.
+# Installation
+```sh
+$ npm i @profusion/apollo-validation-directives
+
+$ yarn add @profusion/apollo-validation-directives
+```
 
 # Helpers
 
