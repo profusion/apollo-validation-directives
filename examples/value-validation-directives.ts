@@ -1,5 +1,4 @@
-import { makeExecutableSchema, ApolloServer } from 'apollo-server';
-import gql from 'graphql-tag';
+import { makeExecutableSchema, ApolloServer, gql } from 'apollo-server';
 
 import { graphql, print } from 'graphql';
 

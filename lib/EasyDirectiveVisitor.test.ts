@@ -10,8 +10,7 @@ import {
   GraphQLBoolean,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
-import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { gql, makeExecutableSchema } from 'apollo-server';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
