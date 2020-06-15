@@ -14,9 +14,7 @@ describe('@foreignNodeId()', (): void => {
   const toNodeId = (typenane: string, id: string): string =>
     Buffer.from(`${typenane}:${id}`).toString('base64');
   const fromNodeId = (id: string): ReturnType<ToNodeId<string>> => {
-    const r = Buffer.from(id, 'base64')
-      .toString('ascii')
-      .split(':');
+    const r = Buffer.from(id, 'base64').toString('ascii').split(':');
     return {
       id: r[1],
       typename: r[0],
