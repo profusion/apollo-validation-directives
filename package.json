@@ -55,10 +55,8 @@
     "typescript": "^3.9.5"
   },
   "peerDependencies": {
-    "apollo-server": "^2.10.1",
-    "apollo-server-errors": "^2.3.4",
-    "graphql": "^14.6.0",
-    "graphql-tag": "^2.10.3",
-    "graphql-tools": "4.0.7"
+    "apollo-server": "^2.14.4",
+    "apollo-server-errors": "^2.4.1",
+    "graphql": "^14.6.0"
   }
 }

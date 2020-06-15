@@ -1,5 +1,4 @@
-import { makeExecutableSchema, ApolloServer } from 'apollo-server';
-import gql from 'graphql-tag';
+import { gql, makeExecutableSchema, ApolloServer } from 'apollo-server';
 
 import { auth, hasPermissions } from '../lib';
 
