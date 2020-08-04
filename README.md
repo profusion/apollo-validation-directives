@@ -86,8 +86,8 @@ The `@hasPermissions()` uses the context-provided
 `checkMissingPermissions()` to see if the current request contains the
 required permissions. If the `policy: THROW` (default) is used, then it
 will throw `ForbiddenError`. If the `policy: RESOLVER` is used, the
-check is done and the resolver will receive an extra argument
-`missingPermissions: [String!]` that is null if nothing is missing,
+check is done inside the resolver and the `GraphQLResolveInfo` argument will receive an extra
+field `missingPermissions: string[]` that is undefined if nothing is missing,
 otherwise it contains the missing permissions. For instance it may
 allow the execution with some restrictions, such as mask values, filter
 and only return the owned fields, etc.

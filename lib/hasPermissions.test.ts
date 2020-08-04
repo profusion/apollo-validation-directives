@@ -1,4 +1,11 @@
-import { graphql, GraphQLResolveInfo, GraphQLSchema } from 'graphql';
+import {
+  defaultFieldResolver,
+  DirectiveLocation,
+  graphql,
+  GraphQLError,
+  GraphQLField,
+  GraphQLResolveInfo,
+} from 'graphql';
 import { print } from 'graphql/language/printer';
 import { gql, makeExecutableSchema } from 'apollo-server';
 import { ForbiddenError } from 'apollo-server-errors';
@@ -9,7 +16,10 @@ import {
   HasPermissionsDirectiveVisitor,
   prodFilterMissingPermissions,
   prodGetErrorMessage,
+  MissingPermissionsResolverInfo,
 } from './hasPermissions';
+
+import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
 describe('@hasPermissions()', (): void => {
   const name = 'hasPermissions';
@@ -47,7 +57,9 @@ enum HasPermissionsDirectivePolicy {
 
   const createEmailResolver = (key = 'email') => (
     fields: { [key: string]: string },
-    { missingPermissions }: { missingPermissions: string[] },
+    _: unknown,
+    __: unknown,
+    { missingPermissions }: MissingPermissionsResolverInfo,
   ): string => {
     const email = fields[key];
     if (missingPermissions) {
@@ -202,7 +214,7 @@ enum HasPermissionsDirectivePolicy {
           gql`
             type SomeObject {
               onlyAllowedMayRead: Int @${name}(permissions: ["x", "y"])
-              email(missingPermissions: [String!]): String
+              email: String
                 @${name}(permissions: ["x"], policy: RESOLVER)
               publicField: String
               alsoPublic: String @${name}(permissions: [])
@@ -271,8 +283,12 @@ enum HasPermissionsDirectivePolicy {
             secondMaskedEmail: createEmailResolver('secondMaskedEmail'),
           },
           TwoResolver: {
-            missingPermissions: (_, { missingPermissions }): string[] | null =>
-              missingPermissions,
+            missingPermissions: (
+              _,
+              __,
+              ___,
+              { missingPermissions }: MissingPermissionsResolverInfo,
+            ): string[] | null => missingPermissions || null,
           },
         },
         schemaDirectives: {
@@ -472,23 +488,62 @@ enum HasPermissionsDirectivePolicy {
     });
   });
 
-  it('throws if missingPermissions argument type is wrong', (): void => {
-    expect(
-      (): GraphQLSchema =>
-        makeExecutableSchema({
-          schemaDirectives: {
-            [name]: HasPermissionsDirectiveVisitor,
-          },
-          typeDefs: [
-            ...directiveTypeDefs,
-            gql`
-              type SomeObject {
-                email(missingPermissions: Boolean): String
-                  @${name}(permissions: ["x"], policy: RESOLVER)
-              }
-            `,
-          ],
-        }),
-    ).toThrow();
+  it('throws if missingPermissions argument type is wrong', async (): Promise<
+    void
+  > => {
+    class InjectMissingPermissions extends EasyDirectiveVisitor<{}> {
+      public static readonly config: typeof EasyDirectiveVisitor['config'] = {
+        locations: [DirectiveLocation.FIELD_DEFINITION],
+      };
+
+      public static readonly defaultName: string = 'injectMissingPermissions';
+
+      // eslint-disable-next-line class-methods-use-this
+      public visitFieldDefinition(field: GraphQLField<unknown, {}>): void {
+        const { resolve = defaultFieldResolver } = field;
+        // eslint-disable-next-line no-param-reassign
+        field.resolve = function (obj, args, context, info): unknown {
+          const enhancedInfo = {
+            ...info,
+            missingPermissions: 'This should be an array!',
+          };
+          return resolve.apply(this, [obj, args, context, enhancedInfo]);
+        };
+      }
+    }
+    const schema = makeExecutableSchema({
+      schemaDirectives: {
+        injectMissingPermissions: InjectMissingPermissions,
+        [name]: HasPermissionsDirectiveVisitor,
+      },
+      typeDefs: [
+        ...directiveTypeDefs,
+        ...InjectMissingPermissions.getTypeDefs(),
+        gql`
+            type Query {
+              test: Boolean @${name}(permissions: ["z"]) @injectMissingPermissions
+            }
+          `,
+      ],
+    });
+    const result = await graphql(
+      schema,
+      print(gql`
+        query {
+          test
+        }
+      `),
+      { test: true },
+      HasPermissionsDirectiveVisitor.createDirectiveContext({
+        filterMissingPermissions: debugFilterMissingPermissions,
+        grantedPermissions,
+      }),
+    );
+    expect(result).toEqual({
+      data: { test: null },
+      errors: [
+        new GraphQLError('The missingPermissions field is not an array!'),
+      ],
+    });
   });
 });

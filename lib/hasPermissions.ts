@@ -10,6 +10,7 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
+  GraphQLResolveInfo,
 } from 'graphql';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
@@ -23,6 +24,10 @@ const isDebug = !!(
 type ResolverArgs<TContext extends object = object> = Parameters<
   GraphQLFieldResolver<unknown, TContext>
 >;
+
+export interface MissingPermissionsResolverInfo extends GraphQLResolveInfo {
+  missingPermissions?: string[];
+}
 
 export type CheckMissingPermissions<TContext extends object = object> = (
   requiredPermissions: string[],
@@ -165,8 +170,6 @@ export class HasPermissionsDirectiveVisitor<
     ? debugGetErrorMessage
     : prodGetErrorMessage;
 
-  public missingPermissionsArgumentName = 'missingPermissions';
-
   public visitObject(object: GraphQLObjectType | GraphQLInterfaceType): void {
     Object.values(object.getFields()).forEach(field => {
       this.visitFieldDefinition(field);
@@ -182,33 +185,15 @@ export class HasPermissionsDirectiveVisitor<
     }
     const cacheKey = JSON.stringify(Array.from(permissions).sort());
 
-    const { getErrorMessage, missingPermissionsArgumentName } = this;
-    const missingPermissionsArg = field.args.find(
-      ({ name }): boolean => name === missingPermissionsArgumentName,
-    );
-    if (!missingPermissionsArg) {
-      field.args.push({
-        astNode: undefined,
-        defaultValue: null,
-        description: 'Missing permissions or null, if everything is granted',
-        extensions: null,
-        name: missingPermissionsArgumentName,
-        type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
-      });
-    } else if (
-      !(
-        missingPermissionsArg.type instanceof GraphQLList &&
-        missingPermissionsArg.type.ofType instanceof GraphQLNonNull &&
-        missingPermissionsArg.type.ofType.ofType === GraphQLString
-      )
-    ) {
-      throw new TypeError(
-        `argument '${missingPermissionsArgumentName}' type must be: [String!]`,
-      );
-    }
+    const { getErrorMessage } = this;
 
     // eslint-disable-next-line no-param-reassign
-    field.resolve = function (obj, args, context, info): Promise<unknown> {
+    field.resolve = function (
+      obj,
+      args,
+      context,
+      info: MissingPermissionsResolverInfo,
+    ): Promise<unknown> {
       const { checkMissingPermissions } = context;
       let missingPermissions = checkMissingPermissions.apply(this, [
         permissions,
@@ -233,8 +218,11 @@ export class HasPermissionsDirectiveVisitor<
         were executed before it, then pass or extend that array with the new
         permissions
       */
-      const existingMissingPermissions = args[missingPermissionsArgumentName];
+      const existingMissingPermissions = info.missingPermissions;
       if (existingMissingPermissions) {
+        if (!Array.isArray(existingMissingPermissions)) {
+          throw new Error('The missingPermissions field is not an array!');
+        }
         if (!missingPermissions) {
           missingPermissions = existingMissingPermissions;
         } else {
@@ -244,12 +232,12 @@ export class HasPermissionsDirectiveVisitor<
         }
       }
 
-      const enhancedArgs = {
-        ...args,
-        [missingPermissionsArgumentName]: missingPermissions,
+      const enhancedInfo = {
+        ...info,
+        missingPermissions,
       };
 
-      return resolve.apply(this, [obj, enhancedArgs, context, info]);
+      return resolve.apply(this, [obj, args, context, enhancedInfo]);
     };
   }
 }
