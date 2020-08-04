@@ -1,16 +1,14 @@
 import { gql, makeExecutableSchema, ApolloServer } from 'apollo-server';
 
-import { auth, hasPermissions } from '../lib';
+import { auth, hasPermissions, MissingPermissionsResolverInfo } from '../lib';
 
 const yourTypeDefs = [
   gql`
     type Query {
       authenticated: Boolean @auth
       throwIfMissingPermissions: Int @hasPermissions(permissions: ["x", "y"])
-      handleMissingPermissions(
-        # the following argument is injected by @hasPermissions():
-        missingPermissions: [String!] = null
-      ): [String!] @hasPermissions(permissions: ["x", "y"], policy: RESOLVER)
+      handleMissingPermissions: [String!]
+        @hasPermissions(permissions: ["x", "y"], policy: RESOLVER)
     }
     type Mutation {
       setAuthenticated(isAuthenticated: Boolean): Boolean!
@@ -47,8 +45,12 @@ const schema = makeExecutableSchema({
     },
     Query: {
       authenticated: (): boolean => true,
-      handleMissingPermissions: (_, { missingPermissions }): string[] | null =>
-        missingPermissions,
+      handleMissingPermissions: (
+        _,
+        __,
+        ___,
+        { missingPermissions }: MissingPermissionsResolverInfo,
+      ): string[] | null => missingPermissions || null,
       throwIfMissingPermissions: (): number => 123,
     },
   },
