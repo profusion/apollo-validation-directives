@@ -21,8 +21,16 @@ export default class SelfNodeIdDirective<
 > extends ValidateDirectiveVisitor<{}, SelfNodeIdContext> {
   public getValidationForArgs(): ValidateFunction<SelfNodeIdContext> {
     const errorMessage = `${this.name} directive only works on strings`;
-    return (value: unknown, _, { name }, { toNodeId }): string => {
+    return (
+      value: unknown,
+      _,
+      { name },
+      { toNodeId },
+    ): string | undefined | null => {
       if (typeof value !== 'string') {
+        if (value === undefined || value === null) {
+          return value;
+        }
         throw new ValidationError(errorMessage);
       }
       const encodedId = toNodeId(name, value);

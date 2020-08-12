@@ -88,6 +88,9 @@ directive @${name} on FIELD_DEFINITION | OBJECT
           type Type3 {
             id: ID!
           }
+          type TypeNullable {
+            id: ID @selfNodeId # test nullable
+          }
           type ${type4} @selfNodeId {
             id: ID!
             anotherField: Float!
@@ -102,6 +105,7 @@ directive @${name} on FIELD_DEFINITION | OBJECT
             type2: ${type2}
             type3: Type3
             type4: ${type4}
+            typeNullable: TypeNullable
             shouldFail: ShouldFail
           }
           type Query {
@@ -127,6 +131,9 @@ directive @${name} on FIELD_DEFINITION | OBJECT
             id
             anotherField
             yetAnotherField
+          }
+          typeNullable {
+            id
           }
           shouldFail {
             float
@@ -154,6 +161,9 @@ directive @${name} on FIELD_DEFINITION | OBJECT
           anotherField: 5.2,
           id: type4Id,
           yetAnotherField: 'asd',
+        },
+        typeNullable: {
+          id: null,
         },
       },
     };
@@ -184,6 +194,9 @@ directive @${name} on FIELD_DEFINITION | OBJECT
               id: toNodeId(type4, type4Id),
               yetAnotherField: rootValue.test.type4.yetAnotherField,
             },
+            typeNullable: {
+              id: null,
+            },
           },
         },
         errors: [
@@ -211,6 +224,9 @@ directive @${name} on FIELD_DEFINITION | OBJECT
               id: '2',
             },
             type4: null,
+            typeNullable: {
+              id: null,
+            },
           },
         },
         errors: [
