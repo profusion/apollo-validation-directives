@@ -80,7 +80,9 @@ ${expectedUnknownTypeDefs}\
 
     it('defaultName is correct', (): void => {
       expect(directiveTypeDefs).toEqual(
-        DirectiveVisitor.getTypeDefs().map(print).join(''),
+        DirectiveVisitor.getTypeDefs()
+          .map(print)
+          .join(''),
       );
     });
 

@@ -208,7 +208,7 @@ export class HasPermissionsDirectiveVisitor<
     }
 
     // eslint-disable-next-line no-param-reassign
-    field.resolve = function (obj, args, context, info): Promise<unknown> {
+    field.resolve = function(obj, args, context, info): Promise<unknown> {
       const { checkMissingPermissions } = context;
       let missingPermissions = checkMissingPermissions.apply(this, [
         permissions,

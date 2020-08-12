@@ -55,7 +55,7 @@ export class AuthDirectiveVisitor<
     const { errorMessage } = this;
 
     // eslint-disable-next-line no-param-reassign
-    field.resolve = function (...args): Promise<unknown> {
+    field.resolve = function(...args): Promise<unknown> {
       const { isAuthenticated } = args[2];
       if (!isAuthenticated.apply(this, args)) {
         throw new AuthenticationError(errorMessage);

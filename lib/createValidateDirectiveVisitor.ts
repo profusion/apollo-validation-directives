@@ -55,9 +55,8 @@ const createValidateDirectiveVisitor = <TArgs extends object>({
   }
 
   Object.defineProperty(CreateValidateDirectiveVisitor, 'name', {
-    value: `${
-      defaultName[0].toUpperCase() + defaultName.slice(1)
-    }DirectiveVisitor`,
+    value: `${defaultName[0].toUpperCase() +
+      defaultName.slice(1)}DirectiveVisitor`,
     writable: false,
   });
 
