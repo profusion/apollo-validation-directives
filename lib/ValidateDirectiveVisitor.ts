@@ -106,7 +106,7 @@ export type ValidatedInputError = {
 };
 
 const containsNonNullField = (field: GraphQLInputField): boolean => {
-  // eslint-disable-next-line no-use-before-define, @typescript-eslint/no-use-before-define
+  // eslint-disable-next-line no-use-before-define
   return containsNonNull(field.type);
 };
 
@@ -133,7 +133,7 @@ const checkMustValidateInputField = (
   if (field.validation) {
     return true;
   }
-  // eslint-disable-next-line no-use-before-define, @typescript-eslint/no-use-before-define
+  // eslint-disable-next-line no-use-before-define
   return checkMustValidateInput(field.type);
 };
 
@@ -176,7 +176,7 @@ const validateContainerEntry = <TContext>(
   // istanbul ignore if  (shouldn't reach)
   if (!container) return;
   const originalValue = container[entry];
-  // eslint-disable-next-line no-use-before-define, @typescript-eslint/no-use-before-define
+  // eslint-disable-next-line no-use-before-define
   const validatedValue = validateEntryValue(
     originalValue,
     type,
@@ -495,7 +495,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
 
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
-  field.resolve = function(...args): Promise<unknown> {
+  field.resolve = function (...args): Promise<unknown> {
     validateFieldArguments(
       args[1],
       field.args,
@@ -517,7 +517,7 @@ export const wrapFieldResolverResult = <TContext>(
 ): void => {
   const { resolve = defaultFieldResolver, type } = field;
   // eslint-disable-next-line no-param-reassign
-  field.resolve = async function(...args): Promise<unknown> {
+  field.resolve = async function (...args): Promise<unknown> {
     const originalValue = await resolve.apply(this, args);
     const validatedValue = validate(originalValue, type, objectType, args[2]);
     if (validatedValue === undefined) {
