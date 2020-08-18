@@ -159,7 +159,8 @@ They can all be used on multiple locations: `ARGUMENT_DEFINITION`,
 `OBJECT`. When used in field containers (`INPUT_OBJECT` or `OBJECT`)
 all fields get the same validation.
 
-Validated fields will get an extra argument `validationErrors` of type
+Validated fields will get an extra property `validationErrors` which
+is present in `GraphQLResolveInfo` of type
 `[ValidatedInputError!]`. It will be injected by resolver wrapper
 and will be `null` if no errors or will contain a non-empty list of
 errors that were captured, in this case the nullable fields are

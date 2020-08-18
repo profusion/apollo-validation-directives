@@ -195,13 +195,14 @@ const validateContainerEntry = <TContext>(
 // it will change the args in-place!
 const validateFieldArguments = <TContext>(
   args: AnyObject,
+  info: AnyObject,
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
   context: TContext,
 ): void => {
   const path: string[] = [];
   const errors: ValidatedInputError[] =
-    args[validationErrorsArgumentName] || [];
+    info[validationErrorsArgumentName] || [];
   definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
     const { name, type, validation } = arg;
     validateContainerEntry(
@@ -217,7 +218,7 @@ const validateFieldArguments = <TContext>(
   });
 
   // eslint-disable-next-line no-param-reassign
-  args[validationErrorsArgumentName] = errors.length > 0 ? errors : null;
+  info[validationErrorsArgumentName] = errors.length > 0 ? errors : null;
 };
 
 // it will change the object in-place!
@@ -446,32 +447,6 @@ const validatedErrorOutputType = new GraphQLObjectType({
   name: 'ValidatedInputErrorOutput',
 });
 
-// makes sure the field.args contains a `$validationErrorsArgumentName`
-// argument with `validatedInputErrorListType` type.
-const addValidationErrorsArgumentDeclaration = <TContext>(
-  field: GraphQLField<unknown, TContext>,
-  validationErrorsArgumentName: string,
-): void => {
-  const validationErrorsArg = field.args.find(
-    ({ name }): boolean => name === validationErrorsArgumentName,
-  );
-
-  if (!validationErrorsArg) {
-    field.args.push({
-      astNode: undefined,
-      defaultValue: null,
-      description:
-        'validation errors or null, if everything is valid. This argument is injected by the validation framework',
-      extensions: null,
-      name: validationErrorsArgumentName,
-      type: validatedInputErrorListType,
-    });
-  } else {
-    validationErrorsArg.type = validatedInputErrorListType;
-    validationErrorsArg.defaultValue = null;
-  }
-};
-
 // Makes sure `field` is flagged as `mustValidateInput: true` and if it wasn't
 // already, then declare the `$validationErrorsArgumentName` argument and
 // wrap the field resolver so it first validates the arguments before
@@ -491,13 +466,12 @@ const wrapFieldResolverValidateArgument = <TContext>(
     return;
   }
 
-  addValidationErrorsArgumentDeclaration(field, validationErrorsArgumentName);
-
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
   field.resolve = function (...args): Promise<unknown> {
     validateFieldArguments(
       args[1],
+      args[3],
       field.args,
       validationErrorsArgumentName,
       args[2],
