@@ -1,6 +1,7 @@
 import { makeExecutableSchema, ApolloServer, gql } from 'apollo-server';
+import { ValidationError } from 'apollo-server-errors';
 
-import { graphql, print } from 'graphql';
+import { graphql, print, GraphQLResolveInfo } from 'graphql';
 
 import {
   listLength,
@@ -9,6 +10,10 @@ import {
   stringLength,
   ValidateDirectiveVisitor,
 } from '../lib';
+
+interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
+  validationErrors?: ValidationError[];
+}
 
 const yourTypeDefs = [
   gql`
@@ -52,17 +57,17 @@ const yourTypeDefs = [
       ): StringLengthExample
       listLengthExample(
         arg: [Int] @listLength(min: 1, max: 100)
-        # validationErrors is injected by ValidateDirectiveVisitor
-        # if may be declared or not. Here it is, while in the previous examples
-        # they didn't. In any case, the argument is present, as can be seen
-        # in the result types + resolver code
-        validationErrors: [ValidatedInputError!] = null
       ): ListLengthExample
     }
   `,
 ];
 
-const argsResolver = (_: unknown, args: object): object => args;
+const argsResolver = (
+  _: unknown,
+  { arg }: { arg: unknown },
+  __: unknown,
+  { validationErrors }: ValidationErrorsResolverInfo,
+): object => ({ arg, validationErrors });
 
 const schema = makeExecutableSchema({
   resolvers: {

@@ -8,6 +8,7 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
+  GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
 import { gql, makeExecutableSchema } from 'apollo-server';
@@ -16,6 +17,10 @@ import { ValidationError } from 'apollo-server-errors';
 import ValidateDirectiveVisitor, {
   ValidateFunction,
 } from './ValidateDirectiveVisitor';
+
+interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
+  validationErrors?: ValidationError[];
+}
 
 const defaultLocationsStr = ValidateDirectiveVisitor.config.locations.join(
   ' | ',
@@ -102,7 +107,7 @@ type ValidatedInputErrorOutput {
 
   describe('basic behavior works', (): void => {
     const mockValidate = jest.fn(x => x);
-    const mockResolver = jest.fn((_, { arg }) => arg);
+    const mockResolver = jest.fn((_, { arg }): object => arg);
     class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
       public static readonly config = {
         ...ValidateDirectiveVisitor.config,
@@ -405,7 +410,12 @@ directive @${name}(
         resolvers: {
           Query: {
             alsoNotValidated: mockResolver,
-            deepNonNullable: (_, { arg, validationErrors }): unknown => {
+            deepNonNullable: (
+              _,
+              { arg },
+              __,
+              { validationErrors }: ValidationErrorsResolverInfo,
+            ): unknown => {
               const { nonNullable } = (arg || [])[0] || {};
               return { nonNullable, validationErrors };
             },
@@ -459,7 +469,6 @@ directive @${name}(
               ): Int
               deepNonNullable(
                 arg: [DeepNonNullableInput!] @${name}
-                validationErrors: [ValidatedInputError!] # injected
               ): DeepNonNullable
               doubleValidation(arg: Int @${name} @anotherDirective): Int
             }
@@ -1047,10 +1056,11 @@ directive @${name}(
             undefined,
             {
               arg: null,
-              validationErrors,
             },
             context,
-            expect.objectContaining({}),
+            expect.objectContaining({
+              validationErrors,
+            }),
           );
         });
 
@@ -1078,10 +1088,9 @@ directive @${name}(
             undefined,
             {
               arg: null,
-              validationErrors,
             },
             context,
-            expect.objectContaining({}),
+            expect.objectContaining({ validationErrors }),
           );
         });
 
@@ -1108,10 +1117,9 @@ directive @${name}(
             {
               arg: null,
               notValidated: 12,
-              validationErrors,
             },
             context,
-            expect.objectContaining({}),
+            expect.objectContaining({ validationErrors }),
           );
         });
 
@@ -1146,10 +1154,9 @@ directive @${name}(
             {
               alsoValidated: 12, // mockImplementationOnce() so only first fails
               arg: null,
-              validationErrors,
             },
             context,
-            expect.objectContaining({}),
+            expect.objectContaining({ validationErrors }),
           );
         });
 
@@ -1187,6 +1194,9 @@ directive @${name}(
             {
               alsoValidated: null,
               arg: null,
+            },
+            context,
+            expect.objectContaining({
               validationErrors: [
                 ...validationErrors,
                 {
@@ -1195,9 +1205,7 @@ directive @${name}(
                   path: ['alsoValidated'],
                 },
               ],
-            },
-            context,
-            expect.objectContaining({}),
+            }),
           );
         });
 
@@ -1259,7 +1267,12 @@ directive @${name}(
       if (typeof x === 'number') return x * 2;
       return x;
     });
-    const mockResolver = jest.fn((_, args): object => args);
+    const mockResolver = jest.fn(
+      (_, { arg }, __, { validationErrors = null }) => ({
+        arg,
+        validationErrors,
+      }),
+    );
 
     class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
       public static readonly config = {
@@ -1317,7 +1330,6 @@ directive @${name}(
               type Query {
                 deepNonNullable(
                   arg: [DeepNonNullableInput!]
-                  validationErrors: [ValidatedInputError!] # injected
                 ): DeepNonNullableResult
               }
             `,
@@ -1408,7 +1420,6 @@ directive @${name}(
                 deepNullable(
                   arg: [DeepNullableInput]
                   other: NoValidatedFields @${name}
-                  validationErrors: [ValidatedInputError!] # injected
                 ): DeepNullableResult
               }
             `,
@@ -1489,7 +1500,6 @@ directive @${name}(
               type Query {
                 test(
                   arg: TestInput @${name}
-                  validationErrors: [ValidatedInputError!] # injected
                 ): Test
               }
             `,
