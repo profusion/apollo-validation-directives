@@ -1,5 +1,6 @@
 import ValidateDirectiveVisitor, {
   ValidateFunction,
+  ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
@@ -8,7 +9,7 @@ export type CreateValidate<TArgs extends object> = (
 ) => ValidateFunction | undefined;
 
 export class ConcreteValidateDirectiveVisitor<
-  TArgs extends object
+  TArgs extends ValidationDirectiveArgs
 > extends ValidateDirectiveVisitor<TArgs> {
   // istanbul ignore next (this shouldn't be used)
   // eslint-disable-next-line class-methods-use-this
@@ -19,7 +20,7 @@ export class ConcreteValidateDirectiveVisitor<
   }
 }
 
-const createValidateDirectiveVisitor = <TArgs extends object>({
+const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
   createValidate,
   defaultName,
   directiveConfig,
@@ -43,6 +44,10 @@ const createValidateDirectiveVisitor = <TArgs extends object>({
       ? ({
           ...ValidateDirectiveVisitor.config,
           ...directiveConfig,
+          args: {
+            ...directiveConfig.args,
+            ...ValidateDirectiveVisitor.config.args,
+          },
         } as const)
       : ValidateDirectiveVisitor.config;
 

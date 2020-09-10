@@ -95,6 +95,10 @@ describe('createValidateDirectiveVisitor', (): void => {
     expect(directive.config).toEqual({
       ...ValidateDirectiveVisitor.config,
       ...directiveConfig,
+      args: {
+        ...directiveConfig.args,
+        ...ValidateDirectiveVisitor.config.args,
+      },
     });
 
     const result = await graphql(schema, '{ item list }', rootValue);

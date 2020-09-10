@@ -2,7 +2,10 @@ import { ValidationError } from 'apollo-server-errors';
 
 import { GraphQLNonNull, GraphQLString } from 'graphql';
 
-import { ValidateFunction } from './ValidateDirectiveVisitor';
+import {
+  ValidateFunction,
+  ValidationDirectiveArgs,
+} from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
 
 const validatePattern = (
@@ -33,7 +36,7 @@ const validatePattern = (
 type PatternDirectiveArgs = {
   regexp: string;
   flags?: string | null;
-};
+} & ValidationDirectiveArgs;
 
 const createValidate = ({
   regexp,

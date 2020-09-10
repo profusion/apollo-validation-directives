@@ -1,7 +1,10 @@
 import { GraphQLFloat } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
-import { ValidateFunction } from './ValidateDirectiveVisitor';
+import {
+  ValidateFunction,
+  ValidationDirectiveArgs,
+} from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
 
 const createValidateMinMax = (min: number, max: number): ValidateFunction => {
@@ -41,7 +44,7 @@ const createValidateMax = (max: number): ValidateFunction => {
 type RangeDirectiveArgs = {
   min: number | null;
   max: number | null;
-};
+} & ValidationDirectiveArgs;
 
 // istanbul ignore next (args set by default to null)
 const createValidate = ({

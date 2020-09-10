@@ -8,6 +8,7 @@ import { ValidationError } from 'apollo-server-errors';
 import ValidateDirectiveVisitor, {
   ValidateFunction,
   wrapFieldResolverResult,
+  ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
 
 type ToNodeId = (entityName: string, id: string) => string | null;
@@ -18,7 +19,7 @@ export type SelfNodeIdContext<TContext extends object = object> = {
 
 export default class SelfNodeIdDirective<
   TContext extends SelfNodeIdContext
-> extends ValidateDirectiveVisitor<{}, SelfNodeIdContext> {
+> extends ValidateDirectiveVisitor<ValidationDirectiveArgs, SelfNodeIdContext> {
   public getValidationForArgs(): ValidateFunction<SelfNodeIdContext> {
     const errorMessage = `${this.name} directive only works on strings`;
     return (
