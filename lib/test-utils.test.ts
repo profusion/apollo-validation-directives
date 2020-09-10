@@ -45,17 +45,30 @@ export type TestCase<TValue, TResult = ExecutionResultDataDefault> = {
   }[];
 };
 
+export const validationDirectionEnumTypeDefs = `\
+enum ValidateDirectivePolicy {
+  """Field resolver is responsible to evaluate it using \`validationErrors\` injected in GraphQLResolverInfo"""
+  RESOLVER
+  """Field resolver is not called if occurs a validation error, it throws \`UserInputError\`"""
+  THROW
+}`;
+
+export const validationDirectivePolicyArgs = `\
+"""How to handle validation errors"""
+  policy: ValidateDirectivePolicy = RESOLVER`;
+
 export const testEasyDirective = <TValue>({
   createSchema,
   name,
   DirectiveVisitor,
   expectedArgsTypeDefs = '',
-  expectedUnknownTypeDefs = '',
+  expectedUnknownTypeDefs = validationDirectionEnumTypeDefs,
   testCases,
 }: {
   createSchema: CreateSchema<TValue>;
   name: string;
-  DirectiveVisitor: typeof EasyDirectiveVisitor;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  DirectiveVisitor: any;
   expectedArgsTypeDefs?: string;
   expectedUnknownTypeDefs?: string;
   testCases: TestCase<TValue>[];
@@ -75,6 +88,7 @@ ${expectedDescription}\
 directive @${name}${expectedArgsTypeDefs} \
 on ${locationsStr}
 ${expectedUnknownTypeDefs}\
+
 `);
     });
 

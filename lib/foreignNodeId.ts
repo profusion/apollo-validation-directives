@@ -3,6 +3,7 @@ import { ValidationError } from 'apollo-server-errors';
 
 import ValidateDirectiveVisitor, {
   ValidateFunction,
+  ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
@@ -19,7 +20,7 @@ export type ForeignNodeIdContext<
 
 export type Args = {
   typename: string;
-};
+} & ValidationDirectiveArgs;
 
 export default class ForeignNodeIdDirective<
   IdType,

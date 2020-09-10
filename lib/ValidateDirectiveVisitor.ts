@@ -21,6 +21,15 @@ import { ValidationError } from 'apollo-server-errors';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
+export enum ValidateDirectivePolicy {
+  RESOLVER = 'RESOLVER',
+  THROW = 'THROW',
+}
+
+export interface ValidationDirectiveArgs {
+  policy: ValidateDirectivePolicy;
+}
+
 export type ValidateFunction<TContext = object> = (
   value: unknown,
   type: GraphQLNamedType | GraphQLInputType,
@@ -30,6 +39,7 @@ export type ValidateFunction<TContext = object> = (
 
 type ValidatedContainerMustValidateInput = {
   mustValidateInput?: boolean;
+  policy?: ValidateDirectivePolicy;
 };
 
 export type ValidatedArgumentsGraphQLField<TContext = object> = GraphQLField<
@@ -42,9 +52,16 @@ export type ValidatedGraphQLInputObjectType = GraphQLInputObjectType &
 
 type ValidatedEntryExtension<TContext = object> = {
   validation?: ValidateFunction<TContext>;
+  policy?: ValidateDirectivePolicy;
 };
 
-export type ValidatedGraphQLArgument<TContext = object> = GraphQLArgument &
+interface Argument extends GraphQLArgument {
+  type: GraphQLInputType & {
+    policy?: ValidateDirectivePolicy;
+  };
+}
+
+export type ValidatedGraphQLArgument<TContext = object> = Argument &
   ValidatedEntryExtension<TContext>;
 export type ValidatedGraphQLInputField<TContext = object> = GraphQLInputField &
   ValidatedEntryExtension<TContext>;
@@ -75,9 +92,12 @@ export const addContainerEntryValidation = <TContext>(
   container: ValidatedContainer<TContext>,
   entry: ValidatedEntry<TContext>,
   validate: ValidateFunction<TContext> | undefined,
+  policy: ValidateDirectivePolicy,
 ): void => {
   // eslint-disable-next-line no-param-reassign
   container.mustValidateInput = true;
+  // eslint-disable-next-line no-param-reassign
+  container.policy = policy;
 
   if (!validate) {
     // We're just flagging the container since a nested
@@ -104,6 +124,8 @@ export type ValidatedInputError = {
   message: string;
   error: Error;
 };
+
+const defaultPolicy: ValidateDirectivePolicy = ValidateDirectivePolicy.RESOLVER;
 
 const containsNonNullField = (field: GraphQLInputField): boolean => {
   // eslint-disable-next-line no-use-before-define
@@ -172,6 +194,7 @@ const validateContainerEntry = <TContext>(
   errors: ValidatedInputError[],
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): void => {
   // istanbul ignore if  (shouldn't reach)
   if (!container) return;
@@ -185,6 +208,7 @@ const validateContainerEntry = <TContext>(
     errors,
     containerType,
     context,
+    policy,
   );
   if (validatedValue !== originalValue) {
     // eslint-disable-next-line no-param-reassign
@@ -199,6 +223,7 @@ const validateFieldArguments = <TContext>(
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): void => {
   const path: string[] = [];
   const errors: ValidatedInputError[] =
@@ -214,6 +239,7 @@ const validateFieldArguments = <TContext>(
       errors,
       arg,
       context,
+      type.policy || policy,
     );
   });
 
@@ -228,6 +254,7 @@ const validateInputObject = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): AnyObject => {
   if (!checkMustValidateInput(objectType) && !containsNonNull(objectType)) {
     return obj;
@@ -246,6 +273,7 @@ const validateInputObject = <TContext>(
         errors,
         objectType,
         context,
+        policy,
       ),
   );
 
@@ -260,6 +288,7 @@ const validateList = <TContext>(
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): AnyArray => {
   if (!checkMustValidateInput(itemType) && !containsNonNull(itemType)) {
     return array;
@@ -276,6 +305,7 @@ const validateList = <TContext>(
       errors,
       container,
       context,
+      policy,
     );
   }
 
@@ -301,6 +331,7 @@ const validateEntryValueThrowing = <TContext>(
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): unknown => {
   let type = originalType;
   let value = originalValue;
@@ -324,7 +355,14 @@ const validateEntryValueThrowing = <TContext>(
 
   if (type instanceof GraphQLInputObjectType) {
     return validateNonNull(
-      validateInputObject(value as AnyObject, type, path, errors, context),
+      validateInputObject(
+        value as AnyObject,
+        type,
+        path,
+        errors,
+        context,
+        policy,
+      ),
       originalType,
     );
   }
@@ -338,6 +376,7 @@ const validateEntryValueThrowing = <TContext>(
         errors,
         container,
         context,
+        policy,
       ),
       originalType,
     );
@@ -372,6 +411,7 @@ const validateEntryValue = <TContext>(
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
+  policy: ValidateDirectivePolicy,
 ): unknown => {
   try {
     return validateEntryValueThrowing(
@@ -382,6 +422,7 @@ const validateEntryValue = <TContext>(
       errors,
       container,
       context,
+      policy,
     );
   } catch (error) {
     if (!isErrorRegistered(errors, error)) {
@@ -393,7 +434,10 @@ const validateEntryValue = <TContext>(
       });
     }
 
-    if (type instanceof GraphQLNonNull) {
+    if (
+      type instanceof GraphQLNonNull ||
+      policy === ValidateDirectivePolicy.THROW
+    ) {
       throw error;
     }
     return null;
@@ -456,10 +500,11 @@ const wrapFieldResolverValidateArgument = <TContext>(
   argument: GraphQLArgument,
   validate: ValidateFunction<TContext> | undefined,
   validationErrorsArgumentName: string,
+  policy: ValidateDirectivePolicy,
 ): void => {
   const { mustValidateInput: alreadyValidated = false } = field;
 
-  addContainerEntryValidation(field, argument, validate);
+  addContainerEntryValidation(field, argument, validate, policy);
   if (alreadyValidated) {
     // wrap only once, conditional to field.mustValidateInput, if
     // it wasn't set before addContainerEntryValidation(), then wrap field.
@@ -475,6 +520,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
       field.args,
       validationErrorsArgumentName,
       args[2],
+      policy,
     );
     return resolve.apply(this, args);
   };
@@ -534,6 +580,7 @@ const wrapFieldsRequiringValidation = <TContext>(
             arg,
             undefined,
             validationErrorsArgumentName,
+            arg.type.policy || defaultPolicy,
           );
         }
       });
@@ -603,7 +650,7 @@ const collectInputObjectsAndFieldsWithArguments = (
  * will throw and the wrapped resolver won't be called.
  */
 abstract class ValidateDirectiveVisitor<
-  TArgs extends object,
+  TArgs extends ValidationDirectiveArgs,
   TContext = object
 > extends EasyDirectiveVisitor<TArgs> {
   public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] = [
@@ -612,6 +659,27 @@ abstract class ValidateDirectiveVisitor<
   ] as const;
 
   public static readonly config: typeof EasyDirectiveVisitor['config'] = {
+    args: {
+      policy: {
+        defaultValue: defaultPolicy,
+        description: 'How to handle validation errors',
+        type: new GraphQLEnumType({
+          name: 'ValidateDirectivePolicy',
+          values: {
+            RESOLVER: {
+              description:
+                'Field resolver is responsible to evaluate it using `validationErrors` injected in GraphQLResolverInfo',
+              value: ValidateDirectivePolicy.RESOLVER,
+            },
+            THROW: {
+              description:
+                'Field resolver is not called if occurs a validation error, it throws `UserInputError`',
+              value: ValidateDirectivePolicy.THROW,
+            },
+          },
+        }),
+      },
+    },
     locations: [
       DirectiveLocation.ARGUMENT_DEFINITION,
       DirectiveLocation.FIELD_DEFINITION,
@@ -703,12 +771,14 @@ abstract class ValidateDirectiveVisitor<
     if (!validate) {
       return;
     }
+    const { policy } = this.args;
     wrapFieldResolverValidateArgument(
       field,
       argument,
       validate,
       (this.constructor as typeof ValidateDirectiveVisitor)
         .validationErrorsArgumentName,
+      policy,
     );
   }
 
@@ -732,9 +802,9 @@ abstract class ValidateDirectiveVisitor<
   public visitInputObject(object: GraphQLInputObjectType): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
-
+    const { policy } = this.args;
     Object.values(object.getFields()).forEach(field => {
-      addContainerEntryValidation(object, field, validate);
+      addContainerEntryValidation(object, field, validate, policy);
     });
   }
 
@@ -748,8 +818,8 @@ abstract class ValidateDirectiveVisitor<
   ): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
-
-    addContainerEntryValidation(objectType, field, validate);
+    const { policy } = this.args;
+    addContainerEntryValidation(objectType, field, validate, policy);
   }
 
   // Output validation is easier since we just replace the field resolver

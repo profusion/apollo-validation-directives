@@ -8,6 +8,7 @@ import {
   CreateSchemaConfig,
   ExpectedTestResult,
   testEasyDirective,
+  validationDirectivePolicyArgs,
 } from './test-utils.test';
 
 type RootValue = {
@@ -51,6 +52,7 @@ testEasyDirective({
   max: Float = null
   """The minimum value (inclusive) to allow. If null, no lower limit is applied"""
   min: Float = null
+  ${validationDirectivePolicyArgs}
 )`,
   name: 'range',
   testCases: [

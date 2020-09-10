@@ -8,6 +8,7 @@ import {
   CreateSchemaConfig,
   ExpectedTestResult,
   testEasyDirective,
+  validationDirectivePolicyArgs,
 } from './test-utils.test';
 
 type RootValue = {
@@ -60,7 +61,11 @@ testEasyDirective({
   createSchema,
   DirectiveVisitor: pattern,
   expectedArgsTypeDefs: `\
-(flags: String, regexp: String!)`,
+(
+  flags: String
+  regexp: String!
+  ${validationDirectivePolicyArgs}
+)`,
   name: 'pattern',
   testCases: [
     {

@@ -8,6 +8,7 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
+  GraphQLError,
   GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
@@ -16,7 +17,12 @@ import { ValidationError } from 'apollo-server-errors';
 
 import ValidateDirectiveVisitor, {
   ValidateFunction,
+  ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
+import {
+  validationDirectivePolicyArgs,
+  validationDirectionEnumTypeDefs,
+} from './test-utils.test';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];
@@ -94,16 +100,99 @@ type ValidatedInputErrorOutput {
       makeExecutableSchema({ typeDefs: minimalTypeDef }),
     ),
     gql`
+      ${validationDirectionEnumTypeDefs}
       directive @anotherDirective(
         validate: Boolean! = true
+        ${validationDirectivePolicyArgs}
       ) on ${defaultLocationsStr}
       directive @${name}(
         validate: Boolean! = true
+        ${validationDirectivePolicyArgs}
       ) on ${defaultLocationsStr}
     `,
   ];
 
-  type TestDirectiveArgs = { validate: boolean };
+  type TestDirectiveArgs = { validate: boolean } & ValidationDirectiveArgs;
+
+  describe('Throw policy', (): void => {
+    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+      // eslint-disable-next-line class-methods-use-this
+      public getValidationForArgs(): ValidateFunction {
+        return (): void => {
+          throw new ValidationError('Validation error');
+        };
+      }
+    }
+    const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Query: {
+            argShouldFail: (): boolean => true,
+            failInput: (): boolean => true,
+            failInputField: (): boolean => true,
+          },
+        },
+        schemaDirectives: {
+          testDirective: TestDirective,
+        },
+        typeDefs: [
+          ...basicTypeDefs,
+          gql`
+            input FailInput @testDirective(policy: THROW) {
+              n: Int
+            }
+            input FailInputField {
+              n: Int @testDirective(policy: THROW)
+            }
+            type Query {
+              argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
+              failInput(input: FailInput): Boolean!
+              failInputField(input: FailInputField): Boolean!
+            }
+          `,
+        ],
+      }),
+    );
+
+    it('should fail on args', async (): Promise<void> => {
+      const source = print(gql`
+        query {
+          argShouldFail(arg: 1)
+        }
+      `);
+      const result = await graphql(schema, source);
+      expect(result).toEqual({
+        data: null,
+        errors: [new GraphQLError('Validation error')],
+      });
+    });
+
+    it('should fail on input object', async (): Promise<void> => {
+      const source = print(gql`
+        query {
+          failInputField(input: { n: 2 })
+        }
+      `);
+      const result = await graphql(schema, source);
+      expect(result).toEqual({
+        data: null,
+        errors: [new GraphQLError('Validation error')],
+      });
+    });
+
+    it('should fail on input object', async (): Promise<void> => {
+      const source = print(gql`
+        query {
+          failInput(input: { n: 2 })
+        }
+      `);
+      const result = await graphql(schema, source);
+      expect(result).toEqual({
+        data: null,
+        errors: [new GraphQLError('Validation error')],
+      });
+    });
+  });
 
   describe('basic behavior works', (): void => {
     const mockValidate = jest.fn(x => x);
@@ -1278,6 +1367,7 @@ directive @${name}(
       public static readonly config = {
         ...ValidateDirectiveVisitor.config,
         args: {
+          ...ValidateDirectiveVisitor.config.args,
           validate: {
             defaultValue: true,
             description: 'if true does validation',
