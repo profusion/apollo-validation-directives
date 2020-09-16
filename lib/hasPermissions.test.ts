@@ -7,7 +7,8 @@ import {
   GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
-import { gql, makeExecutableSchema } from 'apollo-server';
+import { makeExecutableSchema } from 'graphql-tools';
+import gql from 'graphql-tag';
 import { ForbiddenError } from 'apollo-server-errors';
 
 import {
