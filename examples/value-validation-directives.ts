@@ -1,4 +1,6 @@
-import { makeExecutableSchema, ApolloServer, gql } from 'apollo-server';
+import { ApolloServer } from 'apollo-server';
+import { makeExecutableSchema } from 'graphql-tools';
+import gql from 'graphql-tag';
 import { ValidationError } from 'apollo-server-errors';
 
 import { graphql, print, GraphQLResolveInfo } from 'graphql';

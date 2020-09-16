@@ -1,5 +1,6 @@
 import { GraphQLSchema } from 'graphql';
-import { gql, makeExecutableSchema } from 'apollo-server';
+import gql from 'graphql-tag';
+import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
 import stringLength from './stringLength';

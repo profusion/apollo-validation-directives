@@ -15,7 +15,8 @@ import {
   print,
   printType,
 } from 'graphql';
-import { gql, SchemaDirectiveVisitor } from 'apollo-server';
+import gql from 'graphql-tag';
+import { SchemaDirectiveVisitor } from 'graphql-tools';
 
 export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<
   {

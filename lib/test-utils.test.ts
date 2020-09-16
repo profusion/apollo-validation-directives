@@ -4,7 +4,7 @@ import {
   ExecutionResultDataDefault,
   ExecutionResult,
 } from 'graphql/execution/execute';
-import { gql } from 'apollo-server';
+import gql from 'graphql-tag';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 

@@ -1,5 +1,6 @@
 import { graphql, GraphQLBoolean, GraphQLObjectType } from 'graphql';
-import { gql, makeExecutableSchema } from 'apollo-server';
+import { makeExecutableSchema } from 'graphql-tools';
+import gql from 'graphql-tag';
 
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
 import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';

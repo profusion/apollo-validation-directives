@@ -12,7 +12,8 @@ import {
   GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
-import { gql, makeExecutableSchema } from 'apollo-server';
+import gql from 'graphql-tag';
+import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
 import ValidateDirectiveVisitor, {
