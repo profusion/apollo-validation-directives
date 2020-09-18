@@ -4,6 +4,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
 import range from './range';
+import capitalize from './capitalize';
 
 import {
   CreateSchemaConfig,
@@ -44,6 +45,8 @@ const expectedValidationError = (
   errors: [new ValidationError(message)],
 });
 
+const name = 'range';
+
 testEasyDirective({
   createSchema,
   DirectiveVisitor: range,
@@ -53,9 +56,9 @@ testEasyDirective({
   max: Float = null
   """The minimum value (inclusive) to allow. If null, no lower limit is applied"""
   min: Float = null
-  ${validationDirectivePolicyArgs}
+  ${validationDirectivePolicyArgs(capitalize(name))}
 )`,
-  name: 'range',
+  name,
   testCases: [
     {
       directiveArgs: '(min: 0, max: 100)',

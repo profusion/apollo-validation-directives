@@ -4,6 +4,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
 import stringLength from './stringLength';
+import capitalize from './capitalize';
 
 import {
   CreateSchemaConfig,
@@ -44,6 +45,8 @@ const expectedValidationError = (
   errors: [new ValidationError(message)],
 });
 
+const name = 'stringLength';
+
 testEasyDirective({
   createSchema,
   DirectiveVisitor: stringLength,
@@ -53,9 +56,9 @@ testEasyDirective({
   max: Float = null
   """The minimum string length (inclusive) to allow. If null, no lower limit is applied"""
   min: Float = null
-  ${validationDirectivePolicyArgs}
+  ${validationDirectivePolicyArgs(capitalize(name))}
 )`,
-  name: 'stringLength',
+  name,
   testCases: [
     {
       directiveArgs: '(min: 1, max: 3)',

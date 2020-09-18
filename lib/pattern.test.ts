@@ -4,6 +4,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
 import pattern from './pattern';
+import capitalize from './capitalize';
 
 import {
   CreateSchemaConfig,
@@ -58,6 +59,8 @@ const expectedValidationError = (
   errors: [new ValidationError(message)],
 });
 
+const name = 'pattern';
+
 testEasyDirective({
   createSchema,
   DirectiveVisitor: pattern,
@@ -65,9 +68,9 @@ testEasyDirective({
 (
   flags: String
   regexp: String!
-  ${validationDirectivePolicyArgs}
+  ${validationDirectivePolicyArgs(capitalize(name))}
 )`,
-  name: 'pattern',
+  name,
   testCases: [
     {
       directiveArgs: '(regexp: "[a-z]+", flags: "i")',

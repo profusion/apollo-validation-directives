@@ -25,6 +25,8 @@ import {
   validationDirectionEnumTypeDefs,
 } from './test-utils.test';
 
+import capitalize from './capitalize';
+
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];
 }
@@ -96,19 +98,20 @@ type ValidatedInputErrorOutput {
   );
 
   const name = 'testDirective';
+  const capitalizedName = capitalize(name);
   const basicTypeDefs = [
     ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(
       makeExecutableSchema({ typeDefs: minimalTypeDef }),
     ),
     gql`
-      ${validationDirectionEnumTypeDefs}
+      ${validationDirectionEnumTypeDefs(capitalizedName)}
       directive @anotherDirective(
         validate: Boolean! = true
-        ${validationDirectivePolicyArgs}
+        ${validationDirectivePolicyArgs(capitalizedName)}
       ) on ${defaultLocationsStr}
       directive @${name}(
         validate: Boolean! = true
-        ${validationDirectivePolicyArgs}
+        ${validationDirectivePolicyArgs(capitalizedName)}
       ) on ${defaultLocationsStr}
     `,
   ];
@@ -221,7 +224,11 @@ type ValidatedInputErrorOutput {
 directive @${name}(
   """if true does validation"""
   validate: Boolean! = true
+  ${validationDirectivePolicyArgs(capitalizedName)}
 ) on ${defaultLocationsStr}
+`,
+        `\
+${validationDirectionEnumTypeDefs(capitalizedName)}
 `,
         // should NOT return the getMissingCommonTypeDefs() by default!
       ]);

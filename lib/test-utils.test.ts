@@ -7,6 +7,7 @@ import {
 import gql from 'graphql-tag';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import capitalize from './capitalize';
 
 export const minimalTypeDef = gql`
   type T {
@@ -45,24 +46,24 @@ export type TestCase<TValue, TResult = ExecutionResultDataDefault> = {
   }[];
 };
 
-export const validationDirectionEnumTypeDefs = `\
-enum ValidateDirectivePolicy {
+export const validationDirectionEnumTypeDefs = (name: string): string => `\
+enum ${name}ValidateDirectivePolicy {
   """Field resolver is responsible to evaluate it using \`validationErrors\` injected in GraphQLResolverInfo"""
   RESOLVER
   """Field resolver is not called if occurs a validation error, it throws \`UserInputError\`"""
   THROW
 }`;
 
-export const validationDirectivePolicyArgs = `\
+export const validationDirectivePolicyArgs = (name: string): string => `\
 """How to handle validation errors"""
-  policy: ValidateDirectivePolicy = RESOLVER`;
+  policy: ${name}ValidateDirectivePolicy = RESOLVER`;
 
 export const testEasyDirective = <TValue>({
   createSchema,
   name,
   DirectiveVisitor,
   expectedArgsTypeDefs = '',
-  expectedUnknownTypeDefs = validationDirectionEnumTypeDefs,
+  expectedUnknownTypeDefs = validationDirectionEnumTypeDefs(capitalize(name)),
   testCases,
 }: {
   createSchema: CreateSchema<TValue>;
@@ -113,7 +114,11 @@ ${expectedUnknownTypeDefs}\
               createSchema({ DirectiveVisitor, name, testCase }),
             ).toThrowError(error);
           } else {
-            const schema = createSchema({ DirectiveVisitor, name, testCase });
+            const schema = createSchema({
+              DirectiveVisitor,
+              name,
+              testCase,
+            });
             tests.forEach(
               ({
                 rootValue: itemRootValue,

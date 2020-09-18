@@ -138,6 +138,26 @@ const patchDirective = (
   return directive;
 };
 
+export const getDirectiveDeclaration = (
+  defaultName: string,
+  config: ReadonlyGraphQLDirectiveConfigWithoutName,
+  givenDirectiveName?: string,
+  schema?: GraphQLSchema,
+): GraphQLDirective => {
+  const directiveName = givenDirectiveName || defaultName;
+  const previousDirective = schema && schema.getDirective(directiveName);
+  if (previousDirective) {
+    return patchDirective(previousDirective, config);
+  }
+
+  const { locations, ...partialConfig } = config;
+  return new GraphQLDirective({
+    ...partialConfig,
+    locations: Array.from(locations),
+    name: directiveName,
+  });
+};
+
 /**
  * Abstract class to implement helpers to aid `SchemaDirectiveVisitor`
  * implementation.
@@ -213,18 +233,12 @@ abstract class EasyDirectiveVisitor<
     givenDirectiveName?: string,
     schema?: GraphQLSchema,
   ): GraphQLDirective {
-    const directiveName = givenDirectiveName || this.defaultName;
-    const previousDirective = schema && schema.getDirective(directiveName);
-    if (previousDirective) {
-      return patchDirective(previousDirective, this.config);
-    }
-
-    const { locations, ...partialConfig } = this.config;
-    return new GraphQLDirective({
-      ...partialConfig,
-      locations: Array.from(locations),
-      name: directiveName,
-    });
+    return getDirectiveDeclaration(
+      this.defaultName,
+      this.config,
+      givenDirectiveName,
+      schema,
+    );
   }
 
   /**

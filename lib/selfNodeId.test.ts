@@ -4,7 +4,12 @@ import gql from 'graphql-tag';
 import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
+import {
+  validationDirectivePolicyArgs,
+  validationDirectionEnumTypeDefs,
+} from './test-utils.test';
 import SelfNodeId from './selfNodeId';
+import capitalize from './capitalize';
 
 const toNodeId = (name: string, id: string): string =>
   Buffer.from(`${name}:${id}`).toString('base64');
@@ -12,12 +17,18 @@ const toNodeId = (name: string, id: string): string =>
 describe('@selfNodeId()', (): void => {
   const name = 'selfNodeId';
   const directiveTypeDefs = SelfNodeId.getTypeDefs(name);
+  const capitalizedName = capitalize(name);
 
   it('exports correct typeDefs', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual([
       `\
 """ensures that the ID is converted to a global ID"""
-directive @${name} on FIELD_DEFINITION | OBJECT
+directive @${name}(
+  ${validationDirectivePolicyArgs(capitalizedName)}
+) on FIELD_DEFINITION | OBJECT
+`,
+      `\
+${validationDirectionEnumTypeDefs(capitalizedName)}
 `,
     ]);
   });
