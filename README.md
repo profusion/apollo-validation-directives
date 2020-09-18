@@ -445,3 +445,61 @@ const server = new ApolloServer({
   },
 });
 ```
+
+### Apollo Federation
+
+In order to use this package with apollo federation, one must remember
+that __all__ directives should be available to all micros-services (even
+if they not use it). Having this in mind, to setup a micro-service one
+could do the following:
+
+```typescript
+import { GraphQLSchema, DocumentNode } from 'graphql';
+import { SchemaDirectiveVisitor } from 'apollo-server';
+import { buildFederatedSchema } from '@apollo/federation';
+import { GraphQLResolverMap } from 'apollo-graphql';
+import { ValidateDirectiveVisitor, range, stringLength } from '@profusion/apollo-validation-directives';
+
+
+// buildSchema.ts
+
+/*
+  When using apollo federation all
+  directives should be available to all
+  federated nodes.
+*/
+const directives = {
+  range,
+  stringLength,
+};
+
+export const buildSchema = (
+  resolvers: GraphQLResolverMap<{}>,
+  typeDefs: DocumentNode,
+): GraphQLSchema => {
+  const finalTypeDefs = [
+    typeDefs,
+    ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
+    ...Object.values(directives).reduce<DocumentNode[]>(
+      (acc, d) => acc.concat(d.getTypeDefs()),
+      [],
+    ),
+  ];
+  const schema = buildFederatedSchema({ resolvers, typeDefs: finalTypeDefs });
+  SchemaDirectiveVisitor.visitSchemaDirectives(schema, directives);
+  ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
+  return schema;
+};
+
+// server.ts
+
+const resolvers = { /*  the resolvers... */ };
+const typeDefs = gql`....`;
+
+const { url } = await new ApolloServer({
+  // From buildSchema.ts
+  schema: buildSchema(resolvers, typeDefs),
+}).listen(),
+```
+
+See [examples/federation.ts](./examples/federation.ts)
