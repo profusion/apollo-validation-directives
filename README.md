@@ -61,7 +61,7 @@ type MyAuthenticatedObject @auth {
 Code:
 
 ```typescript
-import { auth } from 'apollo-validation-directives';
+import { auth } from '@profusion/apollo-validation-directives';
 
 const server = new ApolloServer({
   resolvers,
@@ -128,7 +128,7 @@ type MyRestrictedObject @hasPermissions(permissions: ["x"]) {
 Code:
 
 ```typescript
-import { hasPermissions } from 'apollo-validation-directives';
+import { hasPermissions } from '@profusion/apollo-validation-directives';
 
 const server = new ApolloServer({
   resolvers,
@@ -170,7 +170,7 @@ fields. These types are exposed by
 
 ```typescript
 import { makeExecutableSchema } from 'apollo-server';
-import { range, ValidateDirectiveVisitor } from 'apollo-validation-directives';
+import { range, ValidateDirectiveVisitor } from '@profusion/apollo-validation-directives';
 
 const schema = makeExecutableSchema({
   typeDefs: [
@@ -357,7 +357,7 @@ type MyAuthenticatedObject @selfNodeId {
 Code:
 
 ```typescript
-import { selfNodeId } from 'apollo-validation-directives';
+import { selfNodeId } from '@profusion/apollo-validation-directives';
 
 const server = new ApolloServer({
   resolvers,
@@ -421,7 +421,7 @@ type Query {
 Code:
 
 ```typescript
-import { foreignNodeId } from 'apollo-validation-directives';
+import { foreignNodeId } from '@profusion/apollo-validation-directives';
 
 const server = new ApolloServer({
   resolvers,
