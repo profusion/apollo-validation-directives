@@ -9,6 +9,11 @@ import ForeignNodeIdDirective, {
   ForeignNodeIdContext,
   ToNodeId,
 } from './foreignNodeId';
+import {
+  validationDirectivePolicyArgs,
+  validationDirectionEnumTypeDefs,
+} from './test-utils.test';
+import capitalize from './capitalize';
 
 describe('@foreignNodeId()', (): void => {
   const toNodeId = (typenane: string, id: string): string =>
@@ -21,6 +26,7 @@ describe('@foreignNodeId()', (): void => {
     };
   };
   const name = 'foreignNodeId';
+  const capitalizedName = capitalize(name);
   const directiveTypeDefs = ForeignNodeIdDirective.getTypeDefs(name);
 
   it('exports correct typeDefs', (): void => {
@@ -30,7 +36,11 @@ describe('@foreignNodeId()', (): void => {
 directive @${name}(
   """The typename that this ID should match"""
   typename: String!
+  ${validationDirectivePolicyArgs(capitalizedName)}
 ) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+`,
+      `\
+${validationDirectionEnumTypeDefs(capitalizedName)}
 `,
     ]);
   });

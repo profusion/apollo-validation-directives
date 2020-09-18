@@ -44,10 +44,6 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
       ? ({
           ...ValidateDirectiveVisitor.config,
           ...directiveConfig,
-          args: {
-            ...directiveConfig.args,
-            ...ValidateDirectiveVisitor.config.args,
-          },
         } as const)
       : ValidateDirectiveVisitor.config;
 
