@@ -30,7 +30,7 @@
         }
     },
     "rules": {
-        "import/no-extraneous-dependencies": ["error", {"devDependencies": ["examples/*.*"]}],
+        "import/no-extraneous-dependencies": ["error", {"devDependencies": ["examples/*.*", "lib/*.test.ts"]}],
         "import/extensions": ["error", "never"],
         "@typescript-eslint/consistent-type-assertions": [
             "error",
