@@ -212,6 +212,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               typeId2: ID! @foreignNodeId(typename: "${idsMap[2].typeName}")
               typeId3: ID! @foreignNodeId(typename: "${idsMap[3].typeName}")
               typeId4: String! @foreignNodeId(typename: "${idsMap[4].typeName}")
+              typeId5: String @foreignNodeId(typename: "${idsMap[4].typeName}")
             }
             type Query {
               work(
@@ -235,6 +236,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         typeId2: toNodeId(idsMap[2].typeName, idsMap[2].id),
         typeId3: toNodeId(idsMap[3].typeName, idsMap[3].id),
         typeId4: toNodeId(idsMap[4].typeName, idsMap[4].id),
+        typeId5: null,
       },
     };
     const rootValue = {
@@ -247,7 +249,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const result = await graphql(schema, source, rootValue, context, variables);
     expect(result).toEqual({ data: rootValue });
     jestMocks.forEach(({ mock: { results } }, i): void => {
-      expect(results[0].value).toEqual(idsMap[i].id);
+      expect(results[0].value).toEqual(
+        i === jestMocks.length - 1 ? null : idsMap[i].id,
+      );
     });
   });
 });

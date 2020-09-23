@@ -38,8 +38,11 @@ export default class ForeignNodeIdDirective<
       _: unknown,
       __: unknown,
       { fromNodeId }: ForeignNodeIdContext<IdType>,
-    ): IdType => {
+    ): IdType | undefined | null => {
       if (typeof value !== 'string') {
+        if (value === null || value === undefined) {
+          return value;
+        }
         throw new ValidationError(wrongUsageErrorMessage);
       }
       const decodedId = fromNodeId(value);
