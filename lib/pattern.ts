@@ -24,6 +24,8 @@ const validatePattern = (
       return value;
     }
     str = value.toString();
+  } else if (value === undefined) {
+    return value;
   } else {
     throw new ValidationError('could not convert value to string');
   }
