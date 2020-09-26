@@ -11,10 +11,7 @@ export type ToNodeId<IdType> = (
   id: string,
 ) => { typename: string; id: IdType } | null;
 
-export type ForeignNodeIdContext<
-  IdType = string,
-  TContext extends object = object
-> = {
+export type ForeignNodeIdContext<IdType = string, _ extends object = object> = {
   fromNodeId: ToNodeId<IdType>;
 };
 
@@ -24,7 +21,7 @@ export type Args = {
 
 export default class ForeignNodeIdDirective<
   IdType,
-  TContext extends ForeignNodeIdContext<IdType>
+  _ extends ForeignNodeIdContext<IdType>
 > extends ValidateDirectiveVisitor<Args, ForeignNodeIdContext<IdType>> {
   public getValidationForArgs():
     | ValidateFunction<ForeignNodeIdContext<IdType>>
@@ -74,9 +71,9 @@ export default class ForeignNodeIdDirective<
 
   public static readonly defaultName: string = 'foreignNodeId';
 
-  public static createDirectiveContext<IdType = string>(ctx: {
-    fromNodeId: ToNodeId<IdType>;
-  }): ForeignNodeIdContext<IdType> {
+  public static createDirectiveContext<CtxIdType = string>(ctx: {
+    fromNodeId: ToNodeId<CtxIdType>;
+  }): ForeignNodeIdContext<CtxIdType> {
     return ctx;
   }
 }
