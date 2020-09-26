@@ -13,12 +13,12 @@ import ValidateDirectiveVisitor, {
 
 type ToNodeId = (entityName: string, id: string) => string | null;
 
-export type SelfNodeIdContext<TContext extends object = object> = {
+export type SelfNodeIdContext<_ extends object = object> = {
   toNodeId: ToNodeId;
 };
 
 export default class SelfNodeIdDirective<
-  TContext extends SelfNodeIdContext
+  _ extends SelfNodeIdContext
 > extends ValidateDirectiveVisitor<ValidationDirectiveArgs, SelfNodeIdContext> {
   public getValidationForArgs(): ValidateFunction<SelfNodeIdContext> {
     const errorMessage = `${this.name} directive only works on strings`;

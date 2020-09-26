@@ -133,7 +133,7 @@ export type ValidatedInputError = {
 const defaultPolicy: ValidateDirectivePolicy = ValidateDirectivePolicy.RESOLVER;
 
 const containsNonNullField = (field: GraphQLInputField): boolean => {
-  // eslint-disable-next-line no-use-before-define
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
   return containsNonNull(field.type);
 };
 
@@ -160,7 +160,7 @@ const checkMustValidateInputField = (
   if (field.validation) {
     return true;
   }
-  // eslint-disable-next-line no-use-before-define
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
   return checkMustValidateInput(field.type);
 };
 
@@ -204,7 +204,7 @@ const validateContainerEntry = <TContext>(
   // istanbul ignore if  (shouldn't reach)
   if (!container) return;
   const originalValue = container[entry];
-  // eslint-disable-next-line no-use-before-define
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
   const validatedValue = validateEntryValue(
     originalValue,
     type,
