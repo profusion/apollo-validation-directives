@@ -44,7 +44,6 @@ export type ValidateFunction<TContext = object> = (
 
 type ValidatedContainerMustValidateInput = {
   mustValidateInput?: boolean;
-  policy?: ValidateDirectivePolicy;
 };
 
 export type ValidatedArgumentsGraphQLField<TContext = object> = GraphQLField<
@@ -102,7 +101,7 @@ export const addContainerEntryValidation = <TContext>(
   // eslint-disable-next-line no-param-reassign
   container.mustValidateInput = true;
   // eslint-disable-next-line no-param-reassign
-  container.policy = policy;
+  entry.policy = policy;
 
   if (!validate) {
     // We're just flagging the container since a nested
@@ -199,7 +198,7 @@ const validateContainerEntry = <TContext>(
   errors: ValidatedInputError[],
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
-  policy: ValidateDirectivePolicy,
+  policy: ValidateDirectivePolicy = defaultPolicy,
 ): void => {
   // istanbul ignore if  (shouldn't reach)
   if (!container) return;
@@ -228,13 +227,12 @@ const validateFieldArguments = <TContext>(
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
   context: TContext,
-  policy: ValidateDirectivePolicy,
 ): void => {
   const path: string[] = [];
   const errors: ValidatedInputError[] =
     info[validationErrorsArgumentName] || [];
   definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
-    const { name, type, validation } = arg;
+    const { name, type, validation, policy } = arg;
     validateContainerEntry(
       args,
       name,
@@ -244,7 +242,7 @@ const validateFieldArguments = <TContext>(
       errors,
       arg,
       context,
-      type.policy || policy,
+      policy,
     );
   });
 
@@ -259,16 +257,18 @@ const validateInputObject = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   context: TContext,
-  policy: ValidateDirectivePolicy,
 ): AnyObject => {
   if (!checkMustValidateInput(objectType) && !containsNonNull(objectType)) {
     return obj;
   }
 
-  Object.values(
-    objectType.getFields(),
-  ).forEach(
-    ({ name, type, validation }: ValidatedGraphQLInputField<TContext>): void =>
+  Object.values(objectType.getFields()).forEach(
+    ({
+      name,
+      type,
+      validation,
+      policy,
+    }: ValidatedGraphQLInputField<TContext>): void => {
       validateContainerEntry(
         obj,
         name,
@@ -279,7 +279,8 @@ const validateInputObject = <TContext>(
         objectType,
         context,
         policy,
-      ),
+      );
+    },
   );
 
   return obj;
@@ -293,9 +294,10 @@ const validateList = <TContext>(
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
+  mustValidateInput: boolean | undefined,
   policy: ValidateDirectivePolicy,
 ): AnyArray => {
-  if (!checkMustValidateInput(itemType) && !containsNonNull(itemType)) {
+  if (!mustValidateInput && !containsNonNull(itemType)) {
     return array;
   }
 
@@ -324,6 +326,13 @@ const validateNonNull = (value: unknown, type: GraphQLInputType): unknown => {
   return value;
 };
 
+type Container = (
+  | GraphQLArgument
+  | GraphQLInputObjectType
+  | GraphQLObjectType
+) &
+  ValidatedContainerMustValidateInput;
+
 // This is the simple version that throws on all errors.
 // See validateEntryValue() for the version that tries
 // to catch and replace with `null` if nullable, then
@@ -334,7 +343,7 @@ const validateEntryValueThrowing = <TContext>(
   validation: ValidateFunction<TContext> | undefined,
   path: string[],
   errors: ValidatedInputError[],
-  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  container: Container,
   context: TContext,
   policy: ValidateDirectivePolicy,
 ): unknown => {
@@ -343,7 +352,7 @@ const validateEntryValueThrowing = <TContext>(
 
   if (validation) {
     value = validation(value, originalType, container, context);
-    if (value === undefined) {
+    if (value === undefined && value !== originalValue) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');
     }
@@ -360,14 +369,7 @@ const validateEntryValueThrowing = <TContext>(
 
   if (type instanceof GraphQLInputObjectType) {
     return validateNonNull(
-      validateInputObject(
-        value as AnyObject,
-        type,
-        path,
-        errors,
-        context,
-        policy,
-      ),
+      validateInputObject(value as AnyObject, type, path, errors, context),
       originalType,
     );
   }
@@ -381,6 +383,7 @@ const validateEntryValueThrowing = <TContext>(
         errors,
         container,
         context,
+        container.mustValidateInput,
         policy,
       ),
       originalType,
@@ -438,11 +441,15 @@ const validateEntryValue = <TContext>(
         path,
       });
     }
-
+    const isThrowPolicy = policy === ValidateDirectivePolicy.THROW;
     if (
+      error.validationDirectiveShouldThrow ||
       type instanceof GraphQLNonNull ||
-      policy === ValidateDirectivePolicy.THROW
+      isThrowPolicy
     ) {
+      if (error.validationDirectiveShouldThrow === undefined && isThrowPolicy) {
+        error.validationDirectiveShouldThrow = true;
+      }
       throw error;
     }
     return null;
@@ -505,7 +512,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
   argument: GraphQLArgument,
   validate: ValidateFunction<TContext> | undefined,
   validationErrorsArgumentName: string,
-  policy: ValidateDirectivePolicy,
+  policy: ValidateDirectivePolicy = defaultPolicy,
 ): void => {
   const { mustValidateInput: alreadyValidated = false } = field;
 
@@ -525,7 +532,6 @@ const wrapFieldResolverValidateArgument = <TContext>(
       field.args,
       validationErrorsArgumentName,
       args[2],
-      policy,
     );
     return resolve.apply(this, args);
   };
@@ -585,7 +591,7 @@ const wrapFieldsRequiringValidation = <TContext>(
             arg,
             undefined,
             validationErrorsArgumentName,
-            arg.type.policy || defaultPolicy,
+            arg.type.policy,
           );
         }
       });
