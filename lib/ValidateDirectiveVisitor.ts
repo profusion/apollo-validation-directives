@@ -551,7 +551,7 @@ export const wrapFieldResolverResult = <TContext>(
   field.resolve = async function (...args): Promise<unknown> {
     const originalValue = await resolve.apply(this, args);
     const validatedValue = validate(originalValue, type, objectType, args[2]);
-    if (validatedValue === undefined) {
+    if (validatedValue === undefined && validatedValue !== originalValue) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');
     }

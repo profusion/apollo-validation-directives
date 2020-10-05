@@ -10,6 +10,10 @@ interface ArgsTestResolverCtx {
   shouldContainValidationErrors?: boolean;
   values?: Record<string, unknown>;
 }
+interface ArgsOutputTestResolverCtx {
+  shouldContainOutputValidationErrors?: boolean;
+  isOptional?: boolean;
+}
 
 describe('validate THROW policy', () => {
   const mockResolver = jest.fn(
@@ -18,8 +22,17 @@ describe('validate THROW policy', () => {
       _args: Record<string, unknown>,
       _ctx: unknown,
       _info: GraphQLResolveInfo & { validationErrors?: unknown[] },
-    ): boolean => true,
+    ): unknown => true,
   );
+  const outputMockResolver = (
+    parent: unknown,
+    args: { arg: number | null },
+    ctx: unknown,
+    info: GraphQLResolveInfo & { validationErrors?: unknown[] },
+  ): number | null => {
+    mockResolver(parent, args, ctx, info);
+    return args.arg;
+  };
   beforeEach(() => {
     mockResolver.mockClear();
   });
@@ -29,6 +42,8 @@ describe('validate THROW policy', () => {
         Query: {
           argTest: mockResolver,
           inputTest: mockResolver,
+          optionalOutputTest: outputMockResolver,
+          outputTest: outputMockResolver,
         },
       },
       schemaDirectives: {
@@ -56,6 +71,8 @@ describe('validate THROW policy', () => {
               n2: Int @range(policy: RESOLVER, max: 10)
             ): Boolean
             inputTest(arg: FirstInput): Boolean
+            outputTest(arg: Int!): Int! @range(max: 200, policy: THROW)
+            optionalOutputTest(arg: Int): Int @range(max: 200, policy: THROW)
           }
         `,
       ],
@@ -88,13 +105,45 @@ describe('validate THROW policy', () => {
       } else {
         expect(call[3].validationErrors).toBeFalsy();
       }
-      expect(data).toEqual({ [resolverName]: true });
+      expect(data && data[resolverName]).toBeTruthy();
     }
     if (!expectedErrors) {
       expect(errors).toBeFalsy();
     } else {
       expect(errors).toEqual(expectedErrors);
       expect(data).toEqual({ [resolverName]: null });
+    }
+  };
+  const doOutputTest = async (
+    query: string,
+    resolverName: string,
+    variables: Record<string, unknown>,
+    {
+      isOptional,
+      shouldContainOutputValidationErrors,
+    }: ArgsOutputTestResolverCtx,
+    expectedErrors?: Error[],
+  ): Promise<void> => {
+    const { data, errors } = await graphql(
+      schema,
+      query,
+      null,
+      null,
+      variables,
+    );
+    expect(mockResolver.mock.calls.length).toBe(1);
+    if (shouldContainOutputValidationErrors) {
+      expect(data && data[resolverName]).toBeFalsy();
+    } else if (!isOptional) {
+      expect(data && data[resolverName]).toBeTruthy();
+    }
+    if (!expectedErrors) {
+      expect(errors).toBeFalsy();
+    } else {
+      expect(errors).toEqual(expectedErrors);
+      if (!isOptional) {
+        expect(data && data[resolverName]).toEqual(null);
+      }
     }
   };
   describe('Validate throw in inputs', () => {
@@ -252,6 +301,61 @@ describe('validate THROW policy', () => {
           shouldCallResolver: false,
         },
         [new GraphQLError('More than 2')],
+      ));
+  });
+  describe('Validate throw in outputs', () => {
+    const executeOutputTests = doOutputTest.bind(
+      null,
+      print(gql`
+        query OutputTest($arg: Int!) {
+          outputTest(arg: $arg)
+        }
+      `),
+      'outputTest',
+    );
+    const executeOptionalOutputTests = doOutputTest.bind(
+      null,
+      print(gql`
+        query OptinalOutputTest($arg: Int) {
+          optionalOutputTest(arg: $arg)
+        }
+      `),
+      'optionalOutputTest',
+    );
+
+    it('Should throw if output value is invalid', () =>
+      executeOutputTests(
+        { arg: 300 },
+        {
+          shouldContainOutputValidationErrors: true,
+        },
+        [new GraphQLError('More than 200')],
+      ));
+    it('Should not throw if output value is valid', () =>
+      executeOutputTests({ arg: 200 }, {}));
+
+    it('Should throw if optional output value is invalid', () =>
+      executeOptionalOutputTests(
+        { arg: 300 },
+        {
+          isOptional: true,
+          shouldContainOutputValidationErrors: true,
+        },
+        [new GraphQLError('More than 200')],
+      ));
+    it('Should not throw if optional output value is valid', () =>
+      executeOptionalOutputTests(
+        { arg: 200 },
+        {
+          isOptional: true,
+        },
+      ));
+    it('Should not throw if optional output value is null or undefined', () =>
+      executeOptionalOutputTests(
+        {},
+        {
+          isOptional: true,
+        },
       ));
   });
 });
