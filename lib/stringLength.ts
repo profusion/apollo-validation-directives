@@ -1,4 +1,4 @@
-import { GraphQLFloat } from 'graphql';
+import { GraphQLFloat, GraphQLString } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
 import {
@@ -7,12 +7,16 @@ import {
 } from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
 
-const createValidateMinMax = (min: number, max: number): ValidateFunction => {
+const createValidateMinMax = (
+  min: number,
+  max: number,
+  fieldName: string,
+): ValidateFunction => {
   if (min < 0) throw new RangeError('@stringLength(min) must be at least 0');
   if (max < min)
     throw new RangeError('@stringLength(max) must be at least equal to min');
-  const errorMessageMin = `String Length is Less than ${min}`;
-  const errorMessageMax = `String Length is More than ${max}`;
+  const errorMessageMin = `${fieldName} Length is Less than ${min}`;
+  const errorMessageMax = `${fieldName} Length is More than ${max}`;
   return (value: unknown): unknown => {
     if (typeof value === 'string') {
       const { length } = value;
@@ -23,9 +27,12 @@ const createValidateMinMax = (min: number, max: number): ValidateFunction => {
   };
 };
 
-const createValidateMin = (min: number): ValidateFunction => {
+const createValidateMin = (
+  min: number,
+  fieldName: string,
+): ValidateFunction => {
   if (min < 0) throw new RangeError('@stringLength(min) must be at least 0');
-  const errorMessage = `String Length is Less than ${min}`;
+  const errorMessage = `${fieldName} Length is Less than ${min}`;
   return (value: unknown): unknown => {
     if (typeof value === 'string') {
       if (value.length < min) throw new ValidationError(errorMessage);
@@ -34,9 +41,12 @@ const createValidateMin = (min: number): ValidateFunction => {
   };
 };
 
-const createValidateMax = (max: number): ValidateFunction => {
+const createValidateMax = (
+  max: number,
+  fieldName: string,
+): ValidateFunction => {
   if (max < 0) throw new RangeError('@stringLength(max) must be at least 0');
-  const errorMessage = `String Length is More than ${max}`;
+  const errorMessage = `${fieldName} Length is More than ${max}`;
   return (value: unknown): unknown => {
     if (typeof value === 'string') {
       if (value.length > max) throw new ValidationError(errorMessage);
@@ -48,16 +58,19 @@ const createValidateMax = (max: number): ValidateFunction => {
 type StringLengthDirectiveArgs = {
   min: number | null;
   max: number | null;
+  fieldName: string;
 } & ValidationDirectiveArgs;
 
 // istanbul ignore next (args set by default to null)
 const createValidate = ({
   min = null,
   max = null,
+  fieldName = 'String',
 }: StringLengthDirectiveArgs): ValidateFunction | undefined => {
-  if (min !== null && max !== null) return createValidateMinMax(min, max);
-  if (min !== null) return createValidateMin(min);
-  if (max !== null) return createValidateMax(max);
+  if (min !== null && max !== null)
+    return createValidateMinMax(min, max, fieldName);
+  if (min !== null) return createValidateMin(min, fieldName);
+  if (max !== null) return createValidateMax(max, fieldName);
   return undefined;
 };
 
@@ -66,6 +79,12 @@ export default createValidateDirectiveVisitor({
   defaultName: 'stringLength',
   directiveConfig: {
     args: {
+      fieldName: {
+        defaultValue: 'String',
+        description:
+          'The field name identifier. Defaults to "String" if not provided',
+        type: GraphQLString,
+      },
       max: {
         defaultValue: null,
         description:

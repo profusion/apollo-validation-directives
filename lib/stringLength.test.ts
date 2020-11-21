@@ -52,6 +52,8 @@ testEasyDirective({
   DirectiveVisitor: stringLength,
   expectedArgsTypeDefs: `\
 (
+  """The field name identifier. Defaults to "String" if not provided"""
+  fieldName: String = "String"
   """The maximum string length (inclusive) to allow. If null, no upper limit is applied"""
   max: Float = null
   """The minimum string length (inclusive) to allow. If null, no lower limit is applied"""
@@ -79,6 +81,24 @@ testEasyDirective({
       ],
     },
     {
+      directiveArgs: '(min: 1, max: 3, fieldName: "Field")',
+      operation: '{ test }',
+      tests: [
+        { rootValue: { test: 'ab' } },
+        { rootValue: { test: 'a' } },
+        { rootValue: { test: 'abc' } },
+        {
+          expected: expectedValidationError('Field Length is Less than 1'),
+          rootValue: { test: '' },
+        },
+        {
+          expected: expectedValidationError('Field Length is More than 3'),
+          rootValue: { test: 'abcd' },
+        },
+        { rootValue: { test: null } },
+      ],
+    },
+    {
       directiveArgs: '(min: 1)',
       operation: '{ test }',
       tests: [
@@ -87,6 +107,21 @@ testEasyDirective({
         { rootValue: { test: 'abc' } },
         {
           expected: expectedValidationError('String Length is Less than 1'),
+          rootValue: { test: '' },
+        },
+        { rootValue: { test: 'abcd' } },
+        { rootValue: { test: null } },
+      ],
+    },
+    {
+      directiveArgs: '(min: 1, fieldName: "Field")',
+      operation: '{ test }',
+      tests: [
+        { rootValue: { test: 'ab' } },
+        { rootValue: { test: 'a' } },
+        { rootValue: { test: 'abc' } },
+        {
+          expected: expectedValidationError('Field Length is Less than 1'),
           rootValue: { test: '' },
         },
         { rootValue: { test: 'abcd' } },
@@ -103,6 +138,21 @@ testEasyDirective({
         { rootValue: { test: '' } },
         {
           expected: expectedValidationError('String Length is More than 3'),
+          rootValue: { test: 'abcd' },
+        },
+        { rootValue: { test: null } },
+      ],
+    },
+    {
+      directiveArgs: '(max: 3, fieldName: "Field")',
+      operation: '{ test }',
+      tests: [
+        { rootValue: { test: 'ab' } },
+        { rootValue: { test: 'a' } },
+        { rootValue: { test: 'abc' } },
+        { rootValue: { test: '' } },
+        {
+          expected: expectedValidationError('Field Length is More than 3'),
           rootValue: { test: 'abcd' },
         },
         { rootValue: { test: null } },
@@ -154,6 +204,32 @@ testEasyDirective({
         {
           expected: expectedValidationError(
             'String Length is More than 3',
+            'arrayTest',
+          ),
+          rootValue: { arrayTest: ['abcd'] },
+        },
+        { rootValue: { arrayTest: [null] } },
+        { rootValue: { arrayTest: null } },
+      ],
+    },
+    {
+      // arrays should work the same, just repeat for min+max
+      directiveArgs: '(min: 1, max: 3, fieldName: "Field")',
+      operation: '{ arrayTest }',
+      tests: [
+        { rootValue: { arrayTest: ['ab'] } },
+        { rootValue: { arrayTest: ['a'] } },
+        { rootValue: { arrayTest: ['abc'] } },
+        {
+          expected: expectedValidationError(
+            'Field Length is Less than 1',
+            'arrayTest',
+          ),
+          rootValue: { arrayTest: [''] },
+        },
+        {
+          expected: expectedValidationError(
+            'Field Length is More than 3',
             'arrayTest',
           ),
           rootValue: { arrayTest: ['abcd'] },
