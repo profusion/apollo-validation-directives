@@ -314,9 +314,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(42, GraphQLInt, QueryType, context);
       });
 
-      it('calls directive if validated, handles throw', async (): Promise<
-        void
-      > => {
+      it('calls directive if validated, handles throw', async (): Promise<void> => {
         const source = print(gql`
           query {
             validated(arg: ${value})
@@ -341,9 +339,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockResolver).toBeCalledTimes(1);
       });
 
-      it('calls directive if validated, handles undefined', async (): Promise<
-        void
-      > => {
+      it('calls directive if validated, handles undefined', async (): Promise<void> => {
         const source = print(gql`
           query {
             validated(arg: ${value})
@@ -366,9 +362,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockResolver).toBeCalledTimes(1);
       });
 
-      it('calls directive if validated, handles modifiers', async (): Promise<
-        void
-      > => {
+      it('calls directive if validated, handles modifiers', async (): Promise<void> => {
         // modifiers are handled the same way, just have a test to guarantee
         // we're not trying to do anything fancy in the core (like map the
         // validation to each element) -- this can be done by the subclasses
@@ -399,9 +393,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockResolver).toBeCalledTimes(1);
       });
 
-      it('does NOT call directive if validation is undefined', async (): Promise<
-        void
-      > => {
+      it('does NOT call directive if validation is undefined', async (): Promise<void> => {
         const source = print(gql`
         query {
           notValidated(arg: ${value})
@@ -649,9 +641,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).toBeCalledTimes(1);
         });
 
-        it('works with nonNullableListOfNonNullable', async (): Promise<
-          void
-        > => {
+        it('works with nonNullableListOfNonNullable', async (): Promise<void> => {
           const source = print(gql`
           query {
             nonNullableListOfNonNullable(arg: [${value}, 42])
@@ -731,9 +721,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).toBeCalledTimes(1);
         });
 
-        it('works with nullableListOfNullable (value)', async (): Promise<
-          void
-        > => {
+        it('works with nullableListOfNullable (value)', async (): Promise<void> => {
           const source = print(gql`
           query {
             nullableListOfNullable(arg: [${value}, null])
@@ -753,9 +741,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).toBeCalledTimes(1);
         });
 
-        it('works with nullableListOfNullable (null)', async (): Promise<
-          void
-        > => {
+        it('works with nullableListOfNullable (null)', async (): Promise<void> => {
           const source = print(gql`
             query {
               nullableListOfNullable(arg: null)
@@ -977,9 +963,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).not.toBeCalled();
         });
 
-        it('works with non-nullable (validation returns undefined)', async (): Promise<
-          void
-        > => {
+        it('works with non-nullable (validation returns undefined)', async (): Promise<void> => {
           const source = print(gql`
             query {
               nonNullable(arg: ${value})
@@ -1002,9 +986,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).not.toBeCalled();
         });
 
-        it('works with non-nullable (validation returns invalid scalar)', async (): Promise<
-          void
-        > => {
+        it('works with non-nullable (validation returns invalid scalar)', async (): Promise<void> => {
           const source = print(gql`
             query {
               nonNullable(arg: ${value})
@@ -1031,9 +1013,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).not.toBeCalled();
         });
 
-        it('works with non-nullable enum (invalid value)', async (): Promise<
-          void
-        > => {
+        it('works with non-nullable enum (invalid value)', async (): Promise<void> => {
           const source = print(gql`
             query {
               nonNullableEnum(arg: someOption)
@@ -1060,9 +1040,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).not.toBeCalled();
         });
 
-        it('works with nonNullableListOfNonNullable', async (): Promise<
-          void
-        > => {
+        it('works with nonNullableListOfNonNullable', async (): Promise<void> => {
           const source = print(gql`
           query {
             nonNullableListOfNonNullable(arg: [${value}, 42])
@@ -1083,9 +1061,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockResolver).not.toBeCalled();
         });
 
-        it('works with nonNullableListOfNonNullable (null element)', async (): Promise<
-          void
-        > => {
+        it('works with nonNullableListOfNonNullable (null element)', async (): Promise<void> => {
           const source = print(gql`
             query {
               nonNullableListOfNonNullable(arg: [${value}, 42])
@@ -1161,9 +1137,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           );
         });
 
-        it('works with nullableListOfNullable (value)', async (): Promise<
-          void
-        > => {
+        it('works with nullableListOfNullable (value)', async (): Promise<void> => {
           const source = print(gql`
           query {
             nullableListOfNullable(arg: [${value}, null])
@@ -1220,9 +1194,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           );
         });
 
-        it('works with manyArgsValidated (one failure)', async (): Promise<
-          void
-        > => {
+        it('works with manyArgsValidated (one failure)', async (): Promise<void> => {
           const source = print(gql`
           query {
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
@@ -1257,9 +1229,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           );
         });
 
-        it('works with manyArgsValidated (two failures)', async (): Promise<
-          void
-        > => {
+        it('works with manyArgsValidated (two failures)', async (): Promise<void> => {
           const source = print(gql`
           query {
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
@@ -1306,9 +1276,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           );
         });
 
-        it('works with deepNonNullable (deep null validated element)', async (): Promise<
-          void
-        > => {
+        it('works with deepNonNullable (deep null validated element)', async (): Promise<void> => {
           const source = print(gql`
             query {
               deepNonNullable(arg: [{ nonNullable: 1 }]) {

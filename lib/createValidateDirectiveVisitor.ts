@@ -33,9 +33,7 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
   extraCommonTypes?: typeof ValidateDirectiveVisitor['commonTypes'];
   isValidateArrayOrValue?: boolean; // if true uses validateArrayOrValue()
 }): typeof ConcreteValidateDirectiveVisitor => {
-  class CreateValidateDirectiveVisitor extends ConcreteValidateDirectiveVisitor<
-    TArgs
-  > {
+  class CreateValidateDirectiveVisitor extends ConcreteValidateDirectiveVisitor<TArgs> {
     public static readonly commonTypes = extraCommonTypes
       ? ValidateDirectiveVisitor.commonTypes.concat(extraCommonTypes)
       : ValidateDirectiveVisitor.commonTypes;
