@@ -35,12 +35,21 @@ export interface ValidationDirectiveArgs {
   policy: ValidateDirectivePolicy;
 }
 
-export type ValidateFunction<TContext = object> = (
-  value: unknown,
-  type: GraphQLNamedType | GraphQLInputType,
-  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
-  context: TContext,
-) => unknown;
+type ValidateFunctionProperties = Readonly<{
+  args: Record<string, unknown>;
+  directive: string;
+  previous?: ValidateFunctionProperties;
+}>;
+
+export type ValidateFunction<TContext = object> = {
+  (
+    value: unknown,
+    type: GraphQLNamedType | GraphQLInputType,
+    container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+    context: TContext,
+  ): unknown;
+  readonly validateProperties?: ValidateFunctionProperties;
+};
 
 type ValidatedContainerMustValidateInput = {
   mustValidateInput?: boolean;
@@ -110,12 +119,21 @@ export const addContainerEntryValidation = <TContext>(
   }
   const previousValidation = entry.validation;
 
+  let validation: ValidateFunction<TContext> = validate;
+  if (previousValidation !== undefined) {
+    validation = (value: unknown, ...rest): unknown =>
+      validate(previousValidation(value, ...rest), ...rest);
+    Object.defineProperty(validation, 'validateProperties', {
+      value: {
+        ...validate.validateProperties,
+        previous: previousValidation,
+      },
+      writable: false,
+    });
+  }
+
   // eslint-disable-next-line no-param-reassign
-  entry.validation =
-    previousValidation === undefined
-      ? validate
-      : (value: unknown, ...rest): unknown =>
-          validate(previousValidation(value, ...rest), ...rest);
+  entry.validation = validation;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -449,6 +467,15 @@ const validateEntryValue = <TContext>(
     ) {
       if (error.validationDirectiveShouldThrow === undefined && isThrowPolicy) {
         error.validationDirectiveShouldThrow = true;
+      }
+      if (error.extensions === undefined) {
+        error.extensions = {};
+      }
+      if (error.extensions.validation === undefined) {
+        error.extensions.validation = {
+          path,
+          properties: validation?.validateProperties,
+        };
       }
       throw error;
     }

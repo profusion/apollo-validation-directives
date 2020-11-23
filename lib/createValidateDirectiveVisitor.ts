@@ -51,6 +51,18 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
 
     public getValidationForArgs(): ValidateFunction | undefined {
       const validate = createValidate(this.args);
+      if (
+        typeof validate === 'function' &&
+        !('validateProperties' in validate)
+      ) {
+        Object.defineProperty(validate, 'validateProperties', {
+          value: {
+            args: this.args,
+            directive: defaultName,
+          },
+          writable: false,
+        });
+      }
       return isValidateArrayOrValue ? validateArrayOrValue(validate) : validate;
     }
   }

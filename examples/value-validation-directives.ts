@@ -60,6 +60,9 @@ const yourTypeDefs = [
       listLengthExample(
         arg: [Int] @listLength(min: 1, max: 100)
       ): ListLengthExample
+      throwingIntRangeExample(
+        arg: Int @range(min: -10, max: 10, policy: THROW)
+      ): IntRangeExample
     }
   `,
 ];
@@ -79,6 +82,7 @@ const schema = makeExecutableSchema({
       listLengthExample: argsResolver,
       patternExample: argsResolver,
       stringLengthExample: argsResolver,
+      throwingIntRangeExample: argsResolver,
     },
   },
   schemaDirectives: { listLength, pattern, range, stringLength },
@@ -251,6 +255,45 @@ const tests = {
         },
       },
     },
+  },
+  Throwing: {
+    query: gql`
+      query Throwing {
+        throwingIntRangeExample(arg: 100) {
+          arg
+          validationErrors {
+            message
+            path
+          }
+        }
+      }
+    `,
+    result: {
+      // keep same order as in GQL so JSON.stringify() serializes the same
+      /* eslint-disable sort-keys */
+      errors: [
+        {
+          message: 'More than 10',
+          locations: [
+            {
+              line: 2,
+              column: 3,
+            },
+          ],
+          path: ['throwingIntRangeExample'],
+          extensions: {
+            code: 'GRAPHQL_VALIDATION_FAILED',
+            validation: {
+              path: ['arg'],
+            },
+          },
+        },
+      ],
+      data: {
+        throwingIntRangeExample: null,
+      },
+    },
+    /* eslint-enable sort-keys */
   },
 };
 
