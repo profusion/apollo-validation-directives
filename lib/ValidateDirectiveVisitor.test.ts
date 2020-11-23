@@ -8,7 +8,6 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLError,
   GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
@@ -122,9 +121,17 @@ type ValidatedInputErrorOutput {
     class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
       // eslint-disable-next-line class-methods-use-this
       public getValidationForArgs(): ValidateFunction {
-        return (): void => {
+        const validate = (): void => {
           throw new ValidationError('Validation error');
         };
+        Object.defineProperty(validate, 'validateProperties', {
+          value: {
+            args: this.args,
+            directive: 'testThrowPolicyValidate',
+          },
+          writable: false,
+        });
+        return validate;
       }
     }
     const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
@@ -167,7 +174,26 @@ type ValidatedInputErrorOutput {
       const result = await graphql(schema, source);
       expect(result).toEqual({
         data: null,
-        errors: [new GraphQLError('Validation error')],
+        errors: [
+          {
+            extensions: {
+              code: 'GRAPHQL_VALIDATION_FAILED',
+              validation: {
+                path: ['arg'],
+                properties: {
+                  args: {
+                    policy: 'THROW',
+                    validate: true,
+                  },
+                  directive: 'testThrowPolicyValidate',
+                },
+              },
+            },
+            locations: [{ column: 3, line: 2 }],
+            message: 'Validation error',
+            path: ['argShouldFail'],
+          },
+        ],
       });
     });
 
@@ -180,7 +206,26 @@ type ValidatedInputErrorOutput {
       const result = await graphql(schema, source);
       expect(result).toEqual({
         data: null,
-        errors: [new GraphQLError('Validation error')],
+        errors: [
+          {
+            extensions: {
+              code: 'GRAPHQL_VALIDATION_FAILED',
+              validation: {
+                path: ['input', 'n'],
+                properties: {
+                  args: {
+                    policy: 'THROW',
+                    validate: true,
+                  },
+                  directive: 'testThrowPolicyValidate',
+                },
+              },
+            },
+            locations: [{ column: 3, line: 2 }],
+            message: 'Validation error',
+            path: ['failInputField'],
+          },
+        ],
       });
     });
 
@@ -193,7 +238,26 @@ type ValidatedInputErrorOutput {
       const result = await graphql(schema, source);
       expect(result).toEqual({
         data: null,
-        errors: [new GraphQLError('Validation error')],
+        errors: [
+          {
+            extensions: {
+              code: 'GRAPHQL_VALIDATION_FAILED',
+              validation: {
+                path: ['input', 'n'],
+                properties: {
+                  args: {
+                    policy: 'THROW',
+                    validate: true,
+                  },
+                  directive: 'testThrowPolicyValidate',
+                },
+              },
+            },
+            locations: [{ column: 3, line: 2 }],
+            message: 'Validation error',
+            path: ['failInput'],
+          },
+        ],
       });
     });
   });
