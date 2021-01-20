@@ -459,9 +459,7 @@ enum HasPermissionsDirectivePolicy {
         });
       });
 
-      it('two policy: RESOLVER missing permissions', async (): Promise<
-        void
-      > => {
+      it('two policy: RESOLVER missing permissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
           grantedPermissions: ['x'],
@@ -489,9 +487,7 @@ enum HasPermissionsDirectivePolicy {
     });
   });
 
-  it('throws if missingPermissions argument type is wrong', async (): Promise<
-    void
-  > => {
+  it('throws if missingPermissions argument type is wrong', async (): Promise<void> => {
     class InjectMissingPermissions extends EasyDirectiveVisitor<{}> {
       public static readonly config: typeof EasyDirectiveVisitor['config'] = {
         locations: [DirectiveLocation.FIELD_DEFINITION],
