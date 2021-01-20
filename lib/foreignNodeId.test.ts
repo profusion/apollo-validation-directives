@@ -227,6 +227,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const source = print(gql`
       query MyQuery($input: Input1!, $arg: ID!) {
         work(input: $input, arg: $arg)
+        secondWork: work(input: $input, arg: $arg)
       }
     `);
     const variables = {
@@ -240,6 +241,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       },
     };
     const rootValue = {
+      secondWork: true,
       work: true,
     };
 
