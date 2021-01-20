@@ -206,7 +206,7 @@ const checkMustValidateInput = (
   return false;
 };
 
-// modifies `container` in-place if the validated value changed!
+// it does not modifies `container` in-place if the validated value changed!
 const validateContainerEntry = <TContext>(
   container: AnyObject,
   entry: number | string,
@@ -217,9 +217,9 @@ const validateContainerEntry = <TContext>(
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
   context: TContext,
   policy: ValidateDirectivePolicy = defaultPolicy,
-): void => {
+): AnyObject => {
   // istanbul ignore if  (shouldn't reach)
-  if (!container) return;
+  if (!container) return container;
   const originalValue = container[entry];
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   const validatedValue = validateEntryValue(
@@ -233,26 +233,35 @@ const validateContainerEntry = <TContext>(
     policy,
   );
   if (validatedValue !== originalValue) {
-    // eslint-disable-next-line no-param-reassign
-    container[entry] = validatedValue;
+    if (Array.isArray(container)) {
+      const arrayCpy = [...container];
+      arrayCpy[entry as number] = validatedValue;
+      return arrayCpy;
+    }
+    return {
+      ...container,
+      [entry]: validatedValue,
+    };
   }
+  return container;
 };
 
-// it will change the args in-place!
+// it will not change the args in-place!
 const validateFieldArguments = <TContext>(
   args: AnyObject,
   info: AnyObject,
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
   context: TContext,
-): void => {
+): AnyObject => {
+  let validatedArgs = args;
   const path: string[] = [];
   const errors: ValidatedInputError[] =
     info[validationErrorsArgumentName] || [];
   definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
     const { name, type, validation, policy } = arg;
-    validateContainerEntry(
-      args,
+    validatedArgs = validateContainerEntry(
+      validatedArgs,
       name,
       type,
       validation,
@@ -266,9 +275,10 @@ const validateFieldArguments = <TContext>(
 
   // eslint-disable-next-line no-param-reassign
   info[validationErrorsArgumentName] = errors.length > 0 ? errors : null;
+  return validatedArgs;
 };
 
-// it will change the object in-place!
+// it will not change the object in-place!
 const validateInputObject = <TContext>(
   obj: AnyObject,
   objectType: ValidatedGraphQLInputObjectType,
@@ -276,8 +286,9 @@ const validateInputObject = <TContext>(
   errors: ValidatedInputError[],
   context: TContext,
 ): AnyObject => {
+  let validatedObj = obj;
   if (!checkMustValidateInput(objectType) && !containsNonNull(objectType)) {
-    return obj;
+    return validatedObj;
   }
 
   Object.values(objectType.getFields()).forEach(
@@ -287,8 +298,8 @@ const validateInputObject = <TContext>(
       validation,
       policy,
     }: ValidatedGraphQLInputField<TContext>): void => {
-      validateContainerEntry(
-        obj,
+      validatedObj = validateContainerEntry(
+        validatedObj,
         name,
         type,
         validation,
@@ -301,10 +312,10 @@ const validateInputObject = <TContext>(
     },
   );
 
-  return obj;
+  return validatedObj;
 };
 
-// it will change the array in-place!
+// it will not change the array in-place!
 const validateList = <TContext>(
   array: AnyArray,
   itemType: GraphQLInputType & ValidatedContainerMustValidateInput,
@@ -315,14 +326,15 @@ const validateList = <TContext>(
   mustValidateInput: boolean | undefined,
   policy: ValidateDirectivePolicy,
 ): AnyArray => {
+  let validatedArray = array;
   if (!mustValidateInput && !containsNonNull(itemType)) {
-    return array;
+    return validatedArray;
   }
 
-  const { length } = array;
+  const { length } = validatedArray;
   for (let i = 0; i < length; i += 1) {
-    validateContainerEntry(
-      array,
+    validatedArray = validateContainerEntry(
+      validatedArray,
       i,
       itemType,
       undefined,
@@ -331,10 +343,10 @@ const validateList = <TContext>(
       container,
       context,
       policy,
-    );
+    ) as AnyArray;
   }
 
-  return array;
+  return validatedArray;
 };
 
 const validateNonNull = (value: unknown, type: GraphQLInputType): unknown => {
@@ -553,7 +565,8 @@ const wrapFieldResolverValidateArgument = <TContext>(
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
   field.resolve = function (...args): Promise<unknown> {
-    validateFieldArguments(
+    // eslint-disable-next-line no-param-reassign
+    args[1] = validateFieldArguments(
       args[1],
       args[3],
       field.args,

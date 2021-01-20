@@ -1684,7 +1684,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         context,
       );
       expect(mockValidate).toBeCalledWith(
-        { value: value * 4 },
+        { value },
         schema.getType('TestInput') as GraphQLInputType,
         getFieldArg(QueryType, 'test', 'arg'),
         context,
