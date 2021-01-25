@@ -169,7 +169,6 @@ const containsNonNull = (type: GraphQLInputType): boolean => {
 
   return false;
 };
-
 const checkMustValidateInputField = (
   field: ValidatedGraphQLInputField,
 ): boolean => {
@@ -198,9 +197,14 @@ const checkMustValidateInput = (
   }
 
   if (finalType instanceof GraphQLInputObjectType) {
-    return Object.values(finalType.getFields()).some(
-      checkMustValidateInputField,
-    );
+    const fieldsToCheck = Object.values(finalType.getFields()).filter(field => {
+      if (field.type instanceof GraphQLList) {
+        return finalType !== field.type.ofType;
+      }
+      return field.type !== finalType;
+    });
+
+    return fieldsToCheck.some(checkMustValidateInputField);
   }
 
   return false;
