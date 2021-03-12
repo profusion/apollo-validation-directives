@@ -13,8 +13,7 @@
         "plugin:prettier/recommended",
         "plugin:import/errors",
         "prettier",
-        "plugin:@typescript-eslint/recommended",
-        "prettier/@typescript-eslint"
+        "plugin:@typescript-eslint/recommended"
     ],
     "globals": {
         "Atomics": "readonly",
