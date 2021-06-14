@@ -41,12 +41,22 @@ type ValidateFunctionProperties = Readonly<{
   previous?: ValidateFunctionProperties;
 }>;
 
+type ResolverParameters<TContext> = {
+  source: unknown;
+  args: AnyObject;
+  context: TContext;
+  info: AnyObject;
+};
+
 export type ValidateFunction<TContext = object> = {
   (
     value: unknown,
     type: GraphQLNamedType | GraphQLInputType,
     container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
     context: TContext,
+    resolverInfo: AnyObject,
+    resolverSource: unknown,
+    resolverArgs: AnyObject,
   ): unknown;
   readonly validateProperties?: ValidateFunctionProperties;
 };
@@ -219,8 +229,8 @@ const validateContainerEntry = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   containerType: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
-  context: TContext,
-  policy: ValidateDirectivePolicy = defaultPolicy,
+  fieldResolveParameters: ResolverParameters<TContext>,
+  policy: ValidateDirectivePolicy | undefined,
 ): AnyObject => {
   // istanbul ignore if  (shouldn't reach)
   if (!container) return container;
@@ -233,7 +243,7 @@ const validateContainerEntry = <TContext>(
     path.concat([entry.toString()]),
     errors,
     containerType,
-    context,
+    fieldResolveParameters,
     policy,
   );
   if (validatedValue !== originalValue) {
@@ -250,18 +260,16 @@ const validateContainerEntry = <TContext>(
   return container;
 };
 
-// it will not change the args in-place!
+// it will not change the fieldResolveParameters args in-place!
 const validateFieldArguments = <TContext>(
-  args: AnyObject,
-  info: AnyObject,
+  fieldResolveParameters: ResolverParameters<TContext>,
   definitions: GraphQLArgument[],
   validationErrorsArgumentName: string,
-  context: TContext,
 ): AnyObject => {
-  let validatedArgs = args;
+  let validatedArgs = fieldResolveParameters.args;
   const path: string[] = [];
   const errors: ValidatedInputError[] =
-    info[validationErrorsArgumentName] || [];
+    fieldResolveParameters.info[validationErrorsArgumentName] || [];
   definitions.forEach((arg: ValidatedGraphQLArgument<TContext>): void => {
     const { name, type, validation, policy } = arg;
     validatedArgs = validateContainerEntry(
@@ -272,13 +280,14 @@ const validateFieldArguments = <TContext>(
       path,
       errors,
       arg,
-      context,
+      fieldResolveParameters,
       policy,
     );
   });
 
   // eslint-disable-next-line no-param-reassign
-  info[validationErrorsArgumentName] = errors.length > 0 ? errors : null;
+  fieldResolveParameters.info[validationErrorsArgumentName] =
+    errors.length > 0 ? errors : null;
   return validatedArgs;
 };
 
@@ -288,7 +297,7 @@ const validateInputObject = <TContext>(
   objectType: ValidatedGraphQLInputObjectType,
   path: string[],
   errors: ValidatedInputError[],
-  context: TContext,
+  fieldResolveParameters: ResolverParameters<TContext>,
 ): AnyObject => {
   let validatedObj = obj;
   if (!checkMustValidateInput(objectType) && !containsNonNull(objectType)) {
@@ -310,7 +319,7 @@ const validateInputObject = <TContext>(
         path,
         errors,
         objectType,
-        context,
+        fieldResolveParameters,
         policy,
       );
     },
@@ -326,9 +335,9 @@ const validateList = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
-  context: TContext,
   mustValidateInput: boolean | undefined,
-  policy: ValidateDirectivePolicy,
+  fieldResolveParameters: ResolverParameters<TContext>,
+  policy: ValidateDirectivePolicy | undefined,
 ): AnyArray => {
   let validatedArray = array;
   if (!mustValidateInput && !containsNonNull(itemType)) {
@@ -345,7 +354,7 @@ const validateList = <TContext>(
       path,
       errors,
       container,
-      context,
+      fieldResolveParameters,
       policy,
     ) as AnyArray;
   }
@@ -378,14 +387,22 @@ const validateEntryValueThrowing = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   container: Container,
-  context: TContext,
-  policy: ValidateDirectivePolicy,
+  fieldResolveParameters: ResolverParameters<TContext>,
+  policy: ValidateDirectivePolicy | undefined,
 ): unknown => {
   let type = originalType;
   let value = originalValue;
 
-  if (validation) {
-    value = validation(value, originalType, container, context);
+  if (validation !== undefined) {
+    value = validation(
+      value,
+      originalType,
+      container,
+      fieldResolveParameters.context,
+      fieldResolveParameters.info,
+      fieldResolveParameters.source,
+      fieldResolveParameters.args,
+    );
     if (value === undefined && value !== originalValue) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');
@@ -403,7 +420,13 @@ const validateEntryValueThrowing = <TContext>(
 
   if (type instanceof GraphQLInputObjectType) {
     return validateNonNull(
-      validateInputObject(value as AnyObject, type, path, errors, context),
+      validateInputObject(
+        value as AnyObject,
+        type,
+        path,
+        errors,
+        fieldResolveParameters,
+      ),
       originalType,
     );
   }
@@ -416,8 +439,8 @@ const validateEntryValueThrowing = <TContext>(
         path,
         errors,
         container,
-        context,
         container.mustValidateInput,
+        fieldResolveParameters,
         policy,
       ),
       originalType,
@@ -452,8 +475,8 @@ const validateEntryValue = <TContext>(
   path: string[],
   errors: ValidatedInputError[],
   container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
-  context: TContext,
-  policy: ValidateDirectivePolicy,
+  fieldResolveParameters: ResolverParameters<TContext>,
+  policy: ValidateDirectivePolicy | undefined,
 ): unknown => {
   try {
     return validateEntryValueThrowing(
@@ -463,7 +486,7 @@ const validateEntryValue = <TContext>(
       path,
       errors,
       container,
-      context,
+      fieldResolveParameters,
       policy,
     );
   } catch (error) {
@@ -475,6 +498,7 @@ const validateEntryValue = <TContext>(
         path,
       });
     }
+
     const isThrowPolicy = policy === ValidateDirectivePolicy.THROW;
     if (
       error.validationDirectiveShouldThrow ||
@@ -568,16 +592,20 @@ const wrapFieldResolverValidateArgument = <TContext>(
 
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
-  field.resolve = function (...args): Promise<unknown> {
+  field.resolve = function (...resolveArgs): Promise<unknown> {
+    const fieldResolveParameters: ResolverParameters<TContext> = {
+      args: resolveArgs[1],
+      context: resolveArgs[2],
+      info: resolveArgs[3],
+      source: resolveArgs[0],
+    };
     // eslint-disable-next-line no-param-reassign
-    args[1] = validateFieldArguments(
-      args[1],
-      args[3],
+    resolveArgs[1] = validateFieldArguments(
+      fieldResolveParameters,
       field.args,
       validationErrorsArgumentName,
-      args[2],
     );
-    return resolve.apply(this, args);
+    return resolve.apply(this, resolveArgs);
   };
 };
 
@@ -594,7 +622,17 @@ export const wrapFieldResolverResult = <TContext>(
   // eslint-disable-next-line no-param-reassign
   field.resolve = async function (...args): Promise<unknown> {
     const originalValue = await resolve.apply(this, args);
-    const validatedValue = validate(originalValue, type, objectType, args[2]);
+
+    const validatedValue = validate(
+      originalValue,
+      type,
+      objectType,
+      args[2],
+      args[3],
+      args[0],
+      args[1],
+    );
+
     if (validatedValue === undefined && validatedValue !== originalValue) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');

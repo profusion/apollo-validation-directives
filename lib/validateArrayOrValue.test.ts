@@ -29,6 +29,9 @@ describe('validateArrayOrValue', (): void => {
     name: 'container',
   });
   const context = { theContext: 1234 };
+  const resolverInfo: Record<string, unknown> = { aInfo: 42 };
+  const resolverSource: Record<string, unknown> = { aSource: 'source' };
+  const resolverArguments: Record<string, unknown> = { aArg: 'argument' };
 
   beforeEach(() => {
     mockValidate.mockReset();
@@ -37,10 +40,26 @@ describe('validateArrayOrValue', (): void => {
 
   it('works with value', (): void => {
     expect(
-      validateArrayOrValue(mockValidate)(value, GraphQLInt, container, context),
+      validateArrayOrValue(mockValidate)(
+        value,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     ).toBe(value);
     expect(mockValidate).toBeCalledTimes(1);
-    expect(mockValidate).toBeCalledWith(value, GraphQLInt, container, context);
+    expect(mockValidate).toBeCalledWith(
+      value,
+      GraphQLInt,
+      container,
+      context,
+      resolverInfo,
+      resolverSource,
+      resolverArguments,
+    );
   });
 
   it('works with non-null value', (): void => {
@@ -50,6 +69,9 @@ describe('validateArrayOrValue', (): void => {
         GraphQLNonNullInt,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     ).toBe(value);
     expect(mockValidate).toBeCalledTimes(1);
@@ -58,6 +80,9 @@ describe('validateArrayOrValue', (): void => {
       GraphQLNonNullInt,
       container,
       context,
+      resolverInfo,
+      resolverSource,
+      resolverArguments,
     );
   });
 
@@ -69,11 +94,22 @@ describe('validateArrayOrValue', (): void => {
         GraphQLIntList,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
+      expect(mockValidate).toBeCalledWith(
+        item,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     );
   });
 
@@ -84,11 +120,22 @@ describe('validateArrayOrValue', (): void => {
         GraphQLNonNullIntList,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
+      expect(mockValidate).toBeCalledWith(
+        item,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     );
   });
 
@@ -99,6 +146,9 @@ describe('validateArrayOrValue', (): void => {
         GraphQLNonNullIntListNonNull,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
@@ -108,6 +158,9 @@ describe('validateArrayOrValue', (): void => {
         GraphQLNonNullInt,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     );
   });
@@ -120,11 +173,22 @@ describe('validateArrayOrValue', (): void => {
         GraphQLIntListList,
         container,
         context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
       ),
     ).toEqual([array]);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
+      expect(mockValidate).toBeCalledWith(
+        item,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     );
   });
 
@@ -134,11 +198,27 @@ describe('validateArrayOrValue', (): void => {
 
     // equal not be: array is `map()`, result is a new array
     expect(
-      validateArrayOrValue(mockValidate)(array, GraphQLInt, container, context),
+      validateArrayOrValue(mockValidate)(
+        array,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     ).toEqual(array);
     expect(mockValidate).toBeCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(item, GraphQLInt, container, context),
+      expect(mockValidate).toBeCalledWith(
+        item,
+        GraphQLInt,
+        container,
+        context,
+        resolverInfo,
+        resolverSource,
+        resolverArguments,
+      ),
     );
   });
 

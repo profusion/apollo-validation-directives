@@ -356,6 +356,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           GraphQLInt,
           QueryType,
           context,
+          expect.any(Object),
+          undefined,
+          { arg: value },
         );
         expect(mockResolver).toBeCalledTimes(1);
       });
@@ -376,7 +379,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           data: { defaultResolver: 42 * 2 },
         });
         expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(42, GraphQLInt, QueryType, context);
+        expect(mockValidate).toBeCalledWith(
+          42,
+          GraphQLInt,
+          QueryType,
+          context,
+          expect.any(Object),
+          { defaultResolver: 42 },
+          { arg: value },
+        );
       });
 
       it('calls directive if validated, handles throw', async (): Promise<void> => {
@@ -400,6 +411,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           GraphQLInt,
           QueryType,
           context,
+          expect.any(Object),
+          undefined,
+          { arg: value },
         );
         expect(mockResolver).toBeCalledTimes(1);
       });
@@ -423,6 +437,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           GraphQLInt,
           QueryType,
           context,
+          expect.any(Object),
+          undefined,
+          { arg: value },
         );
         expect(mockResolver).toBeCalledTimes(1);
       });
@@ -454,6 +471,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           GraphQLIntList,
           QueryType,
           context,
+          expect.any(Object),
+          undefined,
+          { arg: [value, 42, null] },
         );
         expect(mockResolver).toBeCalledTimes(1);
       });
@@ -534,6 +554,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           GraphQLInt,
           AllValidatedType,
           context,
+          expect.any(Object),
+          { value: 12 },
+          {},
         );
       });
 
@@ -658,6 +681,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             getFieldArg(QueryType, 'nonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -682,6 +708,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             getFieldArg(QueryType, 'nonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -702,6 +731,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
             getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: 'someOption' },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -722,6 +754,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [value, 42] },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -742,6 +777,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntList,
             getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [null, value] },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -762,6 +800,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'nullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -782,6 +823,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'nullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: null },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -802,6 +846,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLIntList,
             getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [value, null] },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -822,6 +869,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLIntList,
             getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: null },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -870,6 +920,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value, notValidated: 12 },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -890,12 +943,18 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -931,6 +990,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             ),
             getFieldArg(QueryType, 'deepNonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [{ nonNullable: 1 }] },
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -957,6 +1019,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'defaultResolver', 'arg'),
             context,
+            expect.any(Object),
+            { defaultResolver: 42 },
+            { arg: value },
           );
         });
 
@@ -978,12 +1043,18 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'doubleValidation', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockValidate).toBeCalledWith(
             value * 2,
             GraphQLInt,
             getFieldArg(QueryType, 'doubleValidation', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -1024,6 +1095,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             getFieldArg(QueryType, 'nonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1047,6 +1121,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             getFieldArg(QueryType, 'nonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1074,6 +1151,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             getFieldArg(QueryType, 'nonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1101,6 +1181,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
             getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: 'someOption' },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1122,6 +1205,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [value, 42] },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1147,6 +1233,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [value, 42] },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1168,6 +1257,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntList,
             getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [null, value] },
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1188,6 +1280,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'nullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1218,6 +1313,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLIntList,
             getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [value, null] },
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1246,6 +1344,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: value, notValidated: 12 },
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1275,12 +1376,18 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1313,12 +1420,18 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
             getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
             context,
+            expect.any(Object),
+            undefined,
+            { alsoValidated: 12, arg: value },
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1382,6 +1495,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             ),
             getFieldArg(QueryType, 'deepNonNullable', 'arg'),
             context,
+            expect.any(Object),
+            undefined,
+            { arg: [{ nonNullable: 1 }] },
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -1499,6 +1615,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         GraphQLNonNullInt,
         schema.getType('DeepNonNullableInput'),
         context,
+        expect.any(Object),
+        undefined,
+        { arg: [{ nonNullable: value, notValidated: 42 }] },
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
@@ -1591,12 +1710,24 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         GraphQLInt,
         schema.getType('DeepNullableInput'),
         context,
+        expect.any(Object),
+        undefined,
+        {
+          arg: [{ nullable: value, nullableString: null }],
+          other: { list: [1] },
+        },
       );
       expect(mockValidate).toBeCalledWith(
         { list: [1] },
         schema.getType('NoValidatedFields') as GraphQLInputType,
         getFieldArg(QueryType, 'deepNullable', 'other'),
         context,
+        expect.any(Object),
+        undefined,
+        {
+          arg: [{ nullable: value, nullableString: null }],
+          other: { list: [1] },
+        },
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
@@ -1677,18 +1808,27 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         GraphQLInt,
         schema.getType('TestInput'),
         context,
+        expect.any(Object),
+        undefined,
+        { arg: { value } },
       );
       expect(mockValidate).toBeCalledWith(
         value * 2,
         GraphQLInt,
         schema.getType('TestInput'),
         context,
+        expect.any(Object),
+        undefined,
+        { arg: { value } },
       );
       expect(mockValidate).toBeCalledWith(
         { value },
         schema.getType('TestInput') as GraphQLInputType,
         getFieldArg(QueryType, 'test', 'arg'),
         context,
+        expect.any(Object),
+        undefined,
+        { arg: { value } },
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
