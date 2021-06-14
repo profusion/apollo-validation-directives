@@ -1506,6 +1506,123 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
   });
 
+  describe('Call validation before call output field resolve', (): void => {
+    const mockValidate = jest.fn(x => x);
+    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+      public static readonly config = {
+        ...ValidateDirectiveVisitor.config,
+        args: {
+          validate: {
+            defaultValue: true,
+            description: 'if true does validation',
+            type: new GraphQLNonNull(GraphQLBoolean),
+          },
+        },
+      };
+
+      public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = false;
+
+      public getValidationForArgs(): ValidateFunction | undefined {
+        return this.args.validate ? mockValidate : undefined;
+      }
+    }
+
+    // these are handled directly by the ValidateDirectiveVisitor and
+    // do NOT need addValidationResolversToSchema()!
+
+    // these are simpler to validate since the GraphQL framework will handle
+    // exceptions and all.
+    // This just checks if the field is automatically wrapped, trust
+    // 'field directives' works properly for the details
+    const schema = makeExecutableSchema({
+      schemaDirectives: {
+        [name]: TestDirective,
+      },
+      typeDefs: [
+        ...basicTypeDefs,
+        gql`
+            type AllValidated @${name} {
+              value: Int
+            }
+            type FieldValidated {
+              validatedField: Int @${name}
+              notValidatedField: Int
+            }
+            type Query {
+              allValidated: AllValidated
+              fieldValidated: FieldValidated
+            }
+          `,
+      ],
+    });
+    const AllValidatedType = schema.getType(
+      'AllValidated',
+    ) as GraphQLObjectType;
+    const FieldValidatedType = schema.getType(
+      'FieldValidated',
+    ) as GraphQLObjectType;
+    const context = { theContext: 63 };
+
+    const rootValue = {
+      allValidated: { value: 12 },
+      fieldValidated: { notValidatedField: 15, validatedField: 12 },
+    };
+
+    beforeEach((): void => {
+      mockValidate.mockReset();
+      mockValidate.mockImplementationOnce(() => undefined);
+    });
+
+    it('works with output object', async (): Promise<void> => {
+      const source = print(gql`
+        query {
+          allValidated {
+            value
+          }
+        }
+      `);
+      const result = await graphql(schema, source, rootValue, context);
+      expect(result).toEqual({
+        data: { allValidated: { value: rootValue.allValidated.value } },
+      });
+      expect(mockValidate).toBeCalledTimes(1);
+      expect(mockValidate).toBeCalledWith(
+        undefined,
+        GraphQLInt,
+        AllValidatedType,
+        context,
+        expect.any(Object),
+        rootValue.allValidated,
+        {},
+      );
+    });
+
+    it('works with output field', async (): Promise<void> => {
+      const source = print(gql`
+        query {
+          fieldValidated {
+            validatedField
+            notValidatedField
+          }
+        }
+      `);
+      const result = await graphql(schema, source, rootValue, context);
+      expect(result).toEqual({
+        data: { fieldValidated: { ...rootValue.fieldValidated } },
+      });
+      expect(mockValidate).toBeCalledTimes(1);
+      expect(mockValidate).toBeCalledWith(
+        undefined,
+        GraphQLInt,
+        FieldValidatedType,
+        context,
+        expect.any(Object),
+        rootValue.fieldValidated,
+        {},
+      );
+    });
+  });
+
   describe('input object validation', (): void => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockValidate = jest.fn((x: unknown): any => {

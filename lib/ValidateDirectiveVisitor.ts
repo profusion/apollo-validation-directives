@@ -618,7 +618,9 @@ const wrapFieldResolverValidateArgument = <TContext>(
 // If this function is called multiple times for the same field
 // the validation will be chained:
 // validate(previousValidation(resolvedValue))`
-export const wrapFieldResolverResult = <TContext>(
+export const setFieldResolveToApplyOriginalResolveAndThenValidateResult = <
+  TContext
+>(
   field: GraphQLField<unknown, TContext>,
   validate: ValidateFunction<TContext>,
   objectType: GraphQLObjectType,
@@ -643,6 +645,20 @@ export const wrapFieldResolverResult = <TContext>(
       throw new ValidationError('validation returned undefined');
     }
     return validatedValue;
+  };
+};
+
+export const setFieldResolveToValidateAndThenApplyOriginalResolve = <TContext>(
+  field: GraphQLField<unknown, TContext>,
+  validate: ValidateFunction<TContext>,
+  objectType: GraphQLObjectType,
+): void => {
+  const { resolve = defaultFieldResolver, type } = field;
+  // eslint-disable-next-line no-param-reassign
+  field.resolve = async function (...args): Promise<unknown> {
+    validate(undefined, type, objectType, args[2], args[3], args[0], args[1]);
+
+    return resolve.apply(this, args);
   };
 };
 
@@ -768,6 +784,8 @@ abstract class ValidateDirectiveVisitor<
 
   public static readonly defaultPolicy: ValidateDirectivePolicy =
     ValidateDirectivePolicy.RESOLVER;
+
+  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = true;
 
   public static getDirectiveDeclaration(
     givenDirectiveName?: string,
@@ -954,15 +972,39 @@ abstract class ValidateDirectiveVisitor<
   ): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
-    wrapFieldResolverResult(field, validate, objectType);
+    if (this.applyValidationToOutputTypesAfterOriginalResolver) {
+      setFieldResolveToApplyOriginalResolveAndThenValidateResult(
+        field,
+        validate,
+        objectType,
+      );
+    } else {
+      setFieldResolveToValidateAndThenApplyOriginalResolve(
+        field,
+        validate,
+        objectType,
+      );
+    }
   }
 
   public visitObject(object: GraphQLObjectType | GraphQLInterfaceType): void {
     const validate = this.getValidationForArgs();
     if (!validate) return;
-    Object.values(object.getFields()).forEach(field =>
-      wrapFieldResolverResult(field, validate, object as GraphQLObjectType),
-    );
+    Object.values(object.getFields()).forEach(field => {
+      if (this.applyValidationToOutputTypesAfterOriginalResolver) {
+        setFieldResolveToApplyOriginalResolveAndThenValidateResult(
+          field,
+          validate,
+          object as GraphQLObjectType,
+        );
+      } else {
+        setFieldResolveToValidateAndThenApplyOriginalResolve(
+          field,
+          validate,
+          object as GraphQLObjectType,
+        );
+      }
+    });
   }
 }
 
