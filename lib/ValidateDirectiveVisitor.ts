@@ -115,12 +115,15 @@ export const addContainerEntryValidation = <TContext>(
   container: ValidatedContainer<TContext>,
   entry: ValidatedEntry<TContext>,
   validate: ValidateFunction<TContext> | undefined,
-  policy: ValidateDirectivePolicy,
+  policy: ValidateDirectivePolicy | undefined,
 ): void => {
   // eslint-disable-next-line no-param-reassign
   container.mustValidateInput = true;
-  // eslint-disable-next-line no-param-reassign
-  entry.policy = policy;
+
+  if (policy !== undefined) {
+    // eslint-disable-next-line no-param-reassign
+    entry.policy = policy;
+  }
 
   if (!validate) {
     // We're just flagging the container since a nested
@@ -156,8 +159,6 @@ export type ValidatedInputError = {
   message: string;
   error: Error;
 };
-
-const defaultPolicy: ValidateDirectivePolicy = ValidateDirectivePolicy.RESOLVER;
 
 const containsNonNullField = (field: GraphQLInputField): boolean => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -499,6 +500,10 @@ const validateEntryValue = <TContext>(
       });
     }
 
+    if (policy === undefined) {
+      throw error;
+    }
+
     const isThrowPolicy = policy === ValidateDirectivePolicy.THROW;
     if (
       error.validationDirectiveShouldThrow ||
@@ -579,7 +584,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
   argument: GraphQLArgument,
   validate: ValidateFunction<TContext> | undefined,
   validationErrorsArgumentName: string,
-  policy: ValidateDirectivePolicy = defaultPolicy,
+  policy: ValidateDirectivePolicy | undefined,
 ): void => {
   const { mustValidateInput: alreadyValidated = false } = field;
 
@@ -761,6 +766,9 @@ abstract class ValidateDirectiveVisitor<
     ],
   };
 
+  public static readonly defaultPolicy: ValidateDirectivePolicy =
+    ValidateDirectivePolicy.RESOLVER;
+
   public static getDirectiveDeclaration(
     givenDirectiveName?: string,
     schema?: GraphQLSchema,
@@ -771,7 +779,7 @@ abstract class ValidateDirectiveVisitor<
       args: {
         ...this.config.args,
         policy: {
-          defaultValue: defaultPolicy,
+          defaultValue: this.defaultPolicy,
           description: 'How to handle validation errors',
           type: new GraphQLEnumType({
             name: `${namePrefix}ValidateDirectivePolicy`,
