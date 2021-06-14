@@ -7,7 +7,7 @@ import { ValidationError } from 'apollo-server-errors';
 
 import ValidateDirectiveVisitor, {
   ValidateFunction,
-  wrapFieldResolverResult,
+  setFieldResolveToApplyOriginalResolveAndThenValidateResult,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
 
@@ -54,7 +54,11 @@ export default class SelfNodeIdDirective<
     for (let i = 0; i < fields.length; i += 1) {
       const field = fields[i];
       if (field.name === 'id') {
-        wrapFieldResolverResult(field, validate, object as GraphQLObjectType);
+        setFieldResolveToApplyOriginalResolveAndThenValidateResult(
+          field,
+          validate,
+          object as GraphQLObjectType,
+        );
         foundId = true;
         break;
       }
