@@ -201,7 +201,7 @@ enum HasPermissionsDirectivePolicy {
   });
 
   describe('HasPermissionsDirectiveVisitor', (): void => {
-    describe('works on object field', (): void => {
+    describe('works on type object field', (): void => {
       const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
         makeExecutableSchema({
           resolvers: {
@@ -276,6 +276,126 @@ enum HasPermissionsDirectivePolicy {
           },
           errors: [new ForbiddenError('Missing Permissions: x, y')],
         });
+      });
+    });
+
+    describe('works on input object field', (): void => {
+      const mockResolver = jest.fn(() => {
+        return 'resolverReturn';
+      });
+
+      beforeEach((): void => {
+        mockResolver.mockClear();
+      });
+
+      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              test: mockResolver,
+            },
+          },
+          schemaDirectives: {
+            [name]: HasPermissionsDirectiveVisitor,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
+            input InputObject {
+              onlyAllowedMayRead: Int @${name}(permissions: ["x"])
+              email: String
+                @${name}(permissions: ["x", "y"], policy: RESOLVER)
+              publicField: String
+              alsoPublic: String @${name}(permissions: [])
+            }
+
+            type Query {
+              test(arg: InputObject): String
+            }
+          `,
+          ],
+        }),
+      );
+      const source = print(gql`
+        query {
+          test(
+            arg: {
+              alsoPublic: "world"
+              email: "user@server.com"
+              onlyAllowedMayRead: 42
+              publicField: "hello"
+            }
+          )
+        }
+      `);
+
+      it('if has all permissions, pass all arguments to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg: {
+              alsoPublic: 'world',
+              email: 'user@server.com',
+              onlyAllowedMayRead: 42,
+              publicField: 'hello',
+            },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has permissions for a field with THROW policy, returns null and do not call field resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [new ForbiddenError('Missing Permissions: x')],
+        });
+        expect(mockResolver).not.toBeCalled();
+      });
+
+      it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x'],
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg: {
+              alsoPublic: 'world',
+              email: 'user@server.com',
+              onlyAllowedMayRead: 42,
+              publicField: 'hello',
+            },
+          },
+          context,
+          expect.objectContaining({
+            missingPermissions: ['y'],
+          }),
+        );
       });
     });
 
@@ -486,6 +606,224 @@ enum HasPermissionsDirectivePolicy {
             },
           },
         });
+      });
+    });
+
+    describe('works on whole input object', (): void => {
+      const mockResolver = jest.fn(() => {
+        return 'resolverReturn';
+      });
+
+      beforeEach((): void => {
+        mockResolver.mockClear();
+      });
+
+      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              test: mockResolver,
+            },
+          },
+          schemaDirectives: {
+            [name]: HasPermissionsDirectiveVisitor,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
+            input InputObjectWithXYPermission @${name}(permissions: ["x", "y"], policy: RESOLVER) {
+              xyInput: Int
+            }
+
+            input InputObjectWithXPermission @${name}(permissions: ["x"]) {
+              xInput: String
+            }
+
+            input InputObjectWithoutPermission {
+              input: Boolean
+            }
+
+            type Query {
+              test(arg1: InputObjectWithXYPermission,
+               arg2: InputObjectWithXPermission,
+               arg3: InputObjectWithoutPermission): String
+            }
+          `,
+          ],
+        }),
+      );
+      const source = print(gql`
+        query {
+          test(
+            arg1: { xyInput: 42 }
+            arg2: { xInput: "aInput" }
+            arg3: { input: true }
+          )
+        }
+      `);
+
+      it('if has all permissions, pass all arguments to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg1: { xyInput: 42 },
+            arg2: { xInput: 'aInput' },
+            arg3: { input: true },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has permissions for a field with THROW policy, returns null and do not call field resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [new ForbiddenError('Missing Permissions: x')],
+        });
+        expect(mockResolver).not.toBeCalled();
+      });
+
+      it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x'],
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg1: { xyInput: 42 },
+            arg2: { xInput: 'aInput' },
+            arg3: { input: true },
+          },
+          context,
+          expect.objectContaining({
+            missingPermissions: ['y'],
+          }),
+        );
+      });
+    });
+
+    describe('works on input arguments', (): void => {
+      const mockResolver = jest.fn(() => {
+        return 'resolverReturn';
+      });
+
+      beforeEach((): void => {
+        mockResolver.mockClear();
+      });
+
+      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              test: mockResolver,
+            },
+          },
+          schemaDirectives: {
+            [name]: HasPermissionsDirectiveVisitor,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
+            type Query {
+              test(argXYPermission: Int @${name}(permissions: ["x", "y"], policy: RESOLVER),
+               argXPermission: String @${name}(permissions: ["x"]),
+               arg: Boolean): String
+            }
+          `,
+          ],
+        }),
+      );
+      const source = print(gql`
+        query {
+          test(argXYPermission: 42, argXPermission: "aInput", arg: true)
+        }
+      `);
+
+      it('if has all permissions, pass all arguments to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg: true,
+            argXPermission: 'aInput',
+            argXYPermission: 42,
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has permissions for a field with THROW policy, returns null and do not call field resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [new ForbiddenError('Missing Permissions: x')],
+        });
+        expect(mockResolver).not.toBeCalled();
+      });
+
+      it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x'],
+        });
+        const result = await graphql(schema, source, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg: true,
+            argXPermission: 'aInput',
+            argXYPermission: 42,
+          },
+          context,
+          expect.objectContaining({
+            missingPermissions: ['y'],
+          }),
+        );
       });
     });
   });
