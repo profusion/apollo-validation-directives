@@ -21,6 +21,7 @@ import {
 } from './hasPermissions';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
 
 describe('@hasPermissions()', (): void => {
   const name = 'hasPermissions';
@@ -35,7 +36,7 @@ directive @${name}(
   permissions: [String!]!
   """How to handle missing permissions"""
   policy: HasPermissionsDirectivePolicy = THROW
-) on OBJECT | FIELD_DEFINITION
+) on ARGUMENT_DEFINITION | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | OBJECT
 `,
       `\
 enum HasPermissionsDirectivePolicy {
@@ -201,18 +202,19 @@ enum HasPermissionsDirectivePolicy {
 
   describe('HasPermissionsDirectiveVisitor', (): void => {
     describe('works on object field', (): void => {
-      const schema = makeExecutableSchema({
-        resolvers: {
-          SomeObject: {
-            email: createEmailResolver(),
+      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            SomeObject: {
+              email: createEmailResolver(),
+            },
           },
-        },
-        schemaDirectives: {
-          [name]: HasPermissionsDirectiveVisitor,
-        },
-        typeDefs: [
-          ...directiveTypeDefs,
-          gql`
+          schemaDirectives: {
+            [name]: HasPermissionsDirectiveVisitor,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
             type SomeObject {
               onlyAllowedMayRead: Int @${name}(permissions: ["x", "y"])
               email: String
@@ -224,8 +226,9 @@ enum HasPermissionsDirectivePolicy {
               test: SomeObject
             }
           `,
-        ],
-      });
+          ],
+        }),
+      );
       const source = print(gql`
         query {
           test {
