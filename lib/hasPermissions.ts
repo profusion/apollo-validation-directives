@@ -1,19 +1,22 @@
 import { ForbiddenError } from 'apollo-server-errors';
 import {
-  defaultFieldResolver,
   DirectiveLocation,
   GraphQLEnumType,
-  GraphQLField,
   GraphQLFieldResolver,
-  GraphQLInterfaceType,
   GraphQLList,
   GraphQLNonNull,
-  GraphQLObjectType,
   GraphQLString,
   GraphQLResolveInfo,
+  GraphQLSchema,
+  GraphQLDirective,
 } from 'graphql';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+
+import ValidateDirectiveVisitor, {
+  ValidateDirectivePolicy,
+  ValidateFunction,
+} from './ValidateDirectiveVisitor';
 
 const isDebug = !!(
   process &&
@@ -85,22 +88,24 @@ export const debugGetErrorMessage = (missingPermissions: string[]): string =>
 
 export const prodGetErrorMessage = (): string => errorMessage;
 
-export enum HasPermissionsDirectivePolicy {
-  RESOLVER = 'RESOLVER',
-  THROW = 'THROW',
-}
-
 export type HasPermissionsDirectiveArgs = {
   permissions: string[];
-  policy?: HasPermissionsDirectivePolicy;
+  policy: ValidateDirectivePolicy;
 };
-const defaultPolicy: HasPermissionsDirectivePolicy =
-  HasPermissionsDirectivePolicy.THROW;
+
+const defaultPolicyOutsideClass: ValidateDirectivePolicy =
+  ValidateDirectivePolicy.THROW;
 
 export class HasPermissionsDirectiveVisitor<
   TContext extends HasPermissionsContext
-> extends EasyDirectiveVisitor<HasPermissionsDirectiveArgs> {
-  public static readonly config: typeof EasyDirectiveVisitor['config'] = {
+> extends ValidateDirectiveVisitor<HasPermissionsDirectiveArgs, TContext> {
+  public static readonly defaultName: string = 'hasPermissions';
+
+  public static readonly defaultPolicy: ValidateDirectivePolicy = defaultPolicyOutsideClass;
+
+  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = false;
+
+  public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
     args: {
       permissions: {
         description:
@@ -110,7 +115,7 @@ export class HasPermissionsDirectiveVisitor<
         ),
       },
       policy: {
-        defaultValue: defaultPolicy,
+        defaultValue: defaultPolicyOutsideClass,
         description: 'How to handle missing permissions',
         type: new GraphQLEnumType({
           name: 'HasPermissionsDirectivePolicy',
@@ -118,22 +123,36 @@ export class HasPermissionsDirectiveVisitor<
             RESOLVER: {
               description:
                 'Field resolver is responsible to evaluate it using `missingPermissions` injected argument',
-              value: HasPermissionsDirectivePolicy.RESOLVER,
+              value: ValidateDirectivePolicy.RESOLVER,
             },
             THROW: {
               description:
                 'Field resolver is not called if permissions are missing, it throws `ForbiddenError`',
-              value: HasPermissionsDirectivePolicy.THROW,
+              value: ValidateDirectivePolicy.THROW,
             },
           },
         }),
       },
     },
     description: 'ensures it has permissions before calling the resolver',
-    locations: [DirectiveLocation.OBJECT, DirectiveLocation.FIELD_DEFINITION],
+    locations: [
+      DirectiveLocation.ARGUMENT_DEFINITION,
+      DirectiveLocation.FIELD_DEFINITION,
+      DirectiveLocation.INPUT_FIELD_DEFINITION,
+      DirectiveLocation.INPUT_OBJECT,
+      DirectiveLocation.OBJECT,
+    ],
   };
 
-  public static readonly defaultName: string = 'hasPermissions';
+  public static getDirectiveDeclaration(
+    givenDirectiveName?: string,
+    schema?: GraphQLSchema,
+  ): GraphQLDirective {
+    return EasyDirectiveVisitor.getDirectiveDeclaration.apply(this, [
+      givenDirectiveName,
+      schema,
+    ]);
+  }
 
   public static createDirectiveContext({
     grantedPermissions: rawGrantedPermissions,
@@ -170,55 +189,46 @@ export class HasPermissionsDirectiveVisitor<
     ? debugGetErrorMessage
     : prodGetErrorMessage;
 
-  public visitObject(object: GraphQLObjectType | GraphQLInterfaceType): void {
-    Object.values(object.getFields()).forEach(field => {
-      this.visitFieldDefinition(field);
-    });
-  }
-
-  public visitFieldDefinition(field: GraphQLField<unknown, TContext>): void {
-    const { resolve = defaultFieldResolver } = field;
-    /* istanbul ignore next (directives that do not declare a default policy) */
-    const { permissions, policy = defaultPolicy } = this.args;
-    if (!permissions || !permissions.length) {
-      return;
-    }
+  public getValidationForArgs(): ValidateFunction<TContext> | undefined {
+    const { permissions, policy } = this.args;
     const cacheKey = JSON.stringify(Array.from(permissions).sort());
 
-    const { getErrorMessage } = this;
+    const hasPermissionsValidateFunction: ValidateFunction<TContext> = (
+      value: unknown,
+      _: unknown,
+      __: unknown,
+      context: TContext,
+      resolverInfo: Record<string, unknown>,
+      resolverSource: unknown,
+      resolverArgs: Record<string, unknown>,
+    ): unknown => {
+      if (!permissions || !permissions.length) {
+        return value;
+      }
 
-    // eslint-disable-next-line no-param-reassign
-    field.resolve = function (
-      obj,
-      args,
-      context,
-      info: MissingPermissionsResolverInfo,
-    ): Promise<unknown> {
       const { checkMissingPermissions } = context;
       let missingPermissions = checkMissingPermissions.apply(this, [
         permissions,
         cacheKey,
-        obj,
-        args,
+        resolverSource,
+        resolverArgs,
         context,
-        info,
+        (resolverInfo as unknown) as GraphQLResolveInfo,
       ]);
       if (!(missingPermissions && missingPermissions.length > 0)) {
         missingPermissions = null;
       }
 
-      if (
-        policy === HasPermissionsDirectivePolicy.THROW &&
-        missingPermissions
-      ) {
-        throw new ForbiddenError(getErrorMessage(missingPermissions));
+      if (policy === ValidateDirectivePolicy.THROW && missingPermissions) {
+        throw new ForbiddenError(this.getErrorMessage(missingPermissions));
       }
+
       /*
         If any missing permissions existed from other hasPermissions that
         were executed before it, then pass or extend that array with the new
         permissions
       */
-      const existingMissingPermissions = info.missingPermissions;
+      const existingMissingPermissions = resolverInfo.missingPermissions;
       if (existingMissingPermissions) {
         if (!Array.isArray(existingMissingPermissions)) {
           throw new Error('The missingPermissions field is not an array!');
@@ -231,14 +241,13 @@ export class HasPermissionsDirectiveVisitor<
           );
         }
       }
+      // eslint-disable-next-line no-param-reassign
+      resolverInfo.missingPermissions = missingPermissions;
 
-      const enhancedInfo = {
-        ...info,
-        missingPermissions,
-      };
-
-      return resolve.apply(this, [obj, args, context, enhancedInfo]);
+      return value;
     };
+
+    return hasPermissionsValidateFunction;
   }
 }
 
