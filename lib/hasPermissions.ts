@@ -8,6 +8,7 @@ import {
   GraphQLString,
   GraphQLResolveInfo,
   GraphQLSchema,
+  DirectiveLocationEnum,
   GraphQLDirective,
 } from 'graphql';
 
@@ -189,9 +190,15 @@ export class HasPermissionsDirectiveVisitor<
     ? debugGetErrorMessage
     : prodGetErrorMessage;
 
-  public getValidationForArgs(): ValidateFunction<TContext> | undefined {
+  public getValidationForArgs(
+    location: DirectiveLocationEnum,
+  ): ValidateFunction<TContext> | undefined {
     const { permissions, policy } = this.args;
     const cacheKey = JSON.stringify(Array.from(permissions).sort());
+    const isUsedOnInputOrArgument =
+      location === DirectiveLocation.INPUT_FIELD_DEFINITION ||
+      location === DirectiveLocation.INPUT_OBJECT ||
+      location === DirectiveLocation.ARGUMENT_DEFINITION;
 
     const hasPermissionsValidateFunction: ValidateFunction<TContext> = (
       value: unknown,
@@ -202,7 +209,11 @@ export class HasPermissionsDirectiveVisitor<
       resolverSource: unknown,
       resolverArgs: Record<string, unknown>,
     ): unknown => {
-      if (!permissions || !permissions.length) {
+      if (
+        !permissions ||
+        !permissions.length ||
+        (isUsedOnInputOrArgument && (value === null || value === undefined))
+      ) {
         return value;
       }
 

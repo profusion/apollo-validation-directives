@@ -307,10 +307,16 @@ enum HasPermissionsDirectivePolicy {
                 @${name}(permissions: ["x", "y"], policy: RESOLVER)
               publicField: String
               alsoPublic: String @${name}(permissions: [])
+              skipOnNullField: String @${name}(permissions: ["I don't have this permission, but hey I'm not providing the input so it should not care"])
+              notProvidedField: String @${name}(permissions: ["I love permissions"])
+            }
+
+            input SecondInput @${name}(permissions: ["no permission to use this input"]) {
+              number: Int
             }
 
             type Query {
-              test(arg: InputObject): String
+              test(arg: InputObject, arg2: SecondInput, number: Int @${name}(permissions: ["no permission to use this argument"])): String
             }
           `,
           ],
@@ -324,6 +330,7 @@ enum HasPermissionsDirectivePolicy {
               email: "user@server.com"
               onlyAllowedMayRead: 42
               publicField: "hello"
+              skipOnNullField: null
             }
           )
         }
@@ -348,6 +355,7 @@ enum HasPermissionsDirectivePolicy {
               email: 'user@server.com',
               onlyAllowedMayRead: 42,
               publicField: 'hello',
+              skipOnNullField: null,
             },
           },
           context,
@@ -389,6 +397,7 @@ enum HasPermissionsDirectivePolicy {
               email: 'user@server.com',
               onlyAllowedMayRead: 42,
               publicField: 'hello',
+              skipOnNullField: null,
             },
           },
           context,
