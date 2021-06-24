@@ -17,6 +17,7 @@ import {
   GraphQLScalarType,
   GraphQLSchema,
   GraphQLString,
+  DirectiveLocationEnum,
 } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
@@ -889,9 +890,9 @@ abstract class ValidateDirectiveVisitor<
    *  - `null` for nullable fields;
    *  - `Array` for list fields.
    */
-  public abstract getValidationForArgs():
-    | ValidateFunction<TContext>
-    | undefined;
+  public abstract getValidationForArgs(
+    location: DirectiveLocationEnum,
+  ): ValidateFunction<TContext> | undefined;
 
   // Arguments directly annotated with the directive, such as
   //
@@ -903,7 +904,9 @@ abstract class ValidateDirectiveVisitor<
     argument: GraphQLArgument,
     { field }: { field: GraphQLField<unknown, unknown> },
   ): void {
-    const validate = this.getValidationForArgs();
+    const validate = this.getValidationForArgs(
+      DirectiveLocation.ARGUMENT_DEFINITION,
+    );
     if (!validate) {
       return;
     }
@@ -936,7 +939,7 @@ abstract class ValidateDirectiveVisitor<
   // This is done with `addValidationResolversToSchema()`.
 
   public visitInputObject(object: GraphQLInputObjectType): void {
-    const validate = this.getValidationForArgs();
+    const validate = this.getValidationForArgs(DirectiveLocation.INPUT_OBJECT);
     if (!validate) return;
     const { policy } = this.args;
     Object.values(object.getFields()).forEach(field => {
@@ -952,7 +955,9 @@ abstract class ValidateDirectiveVisitor<
       objectType: GraphQLInputObjectType;
     },
   ): void {
-    const validate = this.getValidationForArgs();
+    const validate = this.getValidationForArgs(
+      DirectiveLocation.INPUT_FIELD_DEFINITION,
+    );
     if (!validate) return;
     const { policy } = this.args;
     addContainerEntryValidation(objectType, field, validate, policy);
@@ -970,7 +975,9 @@ abstract class ValidateDirectiveVisitor<
       objectType: GraphQLObjectType;
     },
   ): void {
-    const validate = this.getValidationForArgs();
+    const validate = this.getValidationForArgs(
+      DirectiveLocation.FIELD_DEFINITION,
+    );
     if (!validate) return;
     if (this.applyValidationToOutputTypesAfterOriginalResolver) {
       setFieldResolveToApplyOriginalResolveAndThenValidateResult(
@@ -988,7 +995,7 @@ abstract class ValidateDirectiveVisitor<
   }
 
   public visitObject(object: GraphQLObjectType | GraphQLInterfaceType): void {
-    const validate = this.getValidationForArgs();
+    const validate = this.getValidationForArgs(DirectiveLocation.OBJECT);
     if (!validate) return;
     Object.values(object.getFields()).forEach(field => {
       if (this.applyValidationToOutputTypesAfterOriginalResolver) {
