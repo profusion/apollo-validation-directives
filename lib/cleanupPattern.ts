@@ -1,4 +1,4 @@
-import { ValidationError } from 'apollo-server-errors';
+import { GraphQLNonNull, GraphQLString } from 'graphql';
 
 import { ValidateFunction } from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
@@ -7,29 +7,31 @@ import createPatternHandler, {
   defaultArgs,
 } from './patternCommon';
 
+type CleanUpPatternArgs = PatternDirectiveArgs & { replaceWith: string };
+
 const createValidate = ({
   regexp,
   flags = null,
-}: PatternDirectiveArgs): ValidateFunction | undefined => {
+  replaceWith,
+}: CleanUpPatternArgs): ValidateFunction | undefined => {
   if (!regexp) return undefined;
-
   const re = new RegExp(regexp, flags || undefined);
-  const errorMessage = `Does not match pattern: /${regexp}/${flags || ''}`;
-  return createPatternHandler((strValue: string, originalValue: unknown) => {
-    if (!re.test(strValue)) {
-      throw new ValidationError(errorMessage);
-    }
-    return originalValue;
-  });
+  return createPatternHandler((value: string): string =>
+    value.replace(re, replaceWith),
+  );
 };
 
 export default createValidateDirectiveVisitor({
   createValidate,
-  defaultName: 'pattern',
+  defaultName: 'cleanupPattern',
   directiveConfig: {
     args: {
       ...defaultArgs,
+      replaceWith: {
+        defaultValue: '',
+        type: new GraphQLNonNull(GraphQLString),
+      },
     },
-    description: 'ensures value matches pattern',
+    description: 'replaces a text based on a regex',
   },
 });
