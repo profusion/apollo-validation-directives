@@ -11,6 +11,7 @@ import {
   range,
   stringLength,
   ValidateDirectiveVisitor,
+  trim,
 } from '../lib';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
@@ -46,6 +47,11 @@ const yourTypeDefs = [
       validationErrors: [ValidatedInputErrorOutput!]
     }
 
+    type TrimExample {
+      arg: String
+      validationErrors: [ValidatedInputErrorOutput!]
+    }
+
     type Query {
       intRangeExample(arg: Int @range(min: -10, max: 10)): IntRangeExample
       floatRangeExample(
@@ -63,6 +69,7 @@ const yourTypeDefs = [
       throwingIntRangeExample(
         arg: Int @range(min: -10, max: 10, policy: THROW)
       ): IntRangeExample
+      trimExample(arg: String @trim(mode: TRIM_ALL)): TrimExample
     }
   `,
 ];
@@ -83,9 +90,10 @@ const schema = makeExecutableSchema({
       patternExample: argsResolver,
       stringLengthExample: argsResolver,
       throwingIntRangeExample: argsResolver,
+      trimExample: argsResolver,
     },
   },
-  schemaDirectives: { listLength, pattern, range, stringLength },
+  schemaDirectives: { listLength, pattern, range, stringLength, trim },
   typeDefs: [
     ...yourTypeDefs,
     ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
@@ -93,6 +101,7 @@ const schema = makeExecutableSchema({
     ...pattern.getTypeDefs(),
     ...range.getTypeDefs(),
     ...stringLength.getTypeDefs(),
+    ...trim.getTypeDefs(),
   ],
 });
 
@@ -229,6 +238,15 @@ const tests = {
             path
           }
         }
+        trimExample(arg: ${JSON.stringify(
+          ' \t \r \n \r\n  trimmed!   \n\n \t \r\n',
+        )}){
+          arg
+          validationErrors {
+            message
+            path
+          }
+        }
       }
     `,
     result: {
@@ -251,6 +269,10 @@ const tests = {
         },
         stringLengthExample: {
           arg: 'hi',
+          validationErrors: null,
+        },
+        trimExample: {
+          arg: 'trimmed!',
           validationErrors: null,
         },
       },
