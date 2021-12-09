@@ -16,4 +16,5 @@ export { default as stringLength } from './stringLength';
 export { default as selfNodeId } from './selfNodeId';
 export { default as foreignNodeId } from './foreignNodeId';
 export { default as cleanupPattern } from './cleanupPattern';
+export { default as trim } from './trim';
 export type { MissingPermissionsResolverInfo } from './hasPermissions';
