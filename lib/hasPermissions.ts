@@ -10,7 +10,13 @@ import {
   GraphQLSchema,
   DirectiveLocationEnum,
   GraphQLDirective,
+  GraphQLInputObjectType,
+  GraphQLArgument,
+  GraphQLObjectType,
+  isInputObjectType,
 } from 'graphql';
+
+import isEqual from 'lodash.isequal';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
@@ -96,6 +102,21 @@ export type HasPermissionsDirectiveArgs = {
 
 const defaultPolicyOutsideClass: ValidateDirectivePolicy =
   ValidateDirectivePolicy.THROW;
+
+export const getDefaultValue = (
+  container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
+  path?: Array<string>,
+): unknown => {
+  if ('defaultValue' in container) {
+    return container.defaultValue;
+  }
+  if (isInputObjectType(container) && path && path.length > 0) {
+    const fieldName = path[path.length - 1];
+    const field = container.getFields()[fieldName];
+    return field.defaultValue;
+  }
+  return undefined;
+};
 
 export class HasPermissionsDirectiveVisitor<
   TContext extends HasPermissionsContext
@@ -203,17 +224,25 @@ export class HasPermissionsDirectiveVisitor<
     const hasPermissionsValidateFunction: ValidateFunction<TContext> = (
       value: unknown,
       _: unknown,
-      __: unknown,
+      container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
       context: TContext,
       resolverInfo: Record<string, unknown>,
       resolverSource: unknown,
       resolverArgs: Record<string, unknown>,
+      path?: Array<string>,
     ): unknown => {
-      if (
-        !permissions ||
-        !permissions.length ||
-        (isUsedOnInputOrArgument && (value === null || value === undefined))
-      ) {
+      if (isUsedOnInputOrArgument) {
+        if (value === undefined) {
+          return value;
+        }
+
+        const defaultValue = getDefaultValue(container, path);
+        if (isEqual(value, defaultValue)) {
+          return value;
+        }
+      }
+
+      if (!permissions || !permissions.length) {
         return value;
       }
 

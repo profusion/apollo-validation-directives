@@ -4,6 +4,7 @@ import {
   graphql,
   GraphQLError,
   GraphQLField,
+  GraphQLObjectType,
   GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
@@ -18,6 +19,7 @@ import {
   prodFilterMissingPermissions,
   prodGetErrorMessage,
   MissingPermissionsResolverInfo,
+  getDefaultValue,
 } from './hasPermissions';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
@@ -26,6 +28,9 @@ import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
 describe('@hasPermissions()', (): void => {
   const name = 'hasPermissions';
   const directiveTypeDefs = HasPermissionsDirectiveVisitor.getTypeDefs(name);
+
+  const defaultValuePermission = `If use the default value, don't need this permission`;
+  const noDefaultListValuePermission = `I don't has default list value in here`;
 
   it('exports correct typeDefs', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual([
@@ -53,6 +58,12 @@ enum HasPermissionsDirectivePolicy {
     expect(directiveTypeDefs.map(print)).toEqual(
       HasPermissionsDirectiveVisitor.getTypeDefs().map(print),
     );
+  });
+
+  it('if pass to the getDefaultValue function, a container with a different type than Argument or InputObjectType, return undefined', async (): Promise<void> => {
+    const container = {};
+
+    expect(getDefaultValue(container as GraphQLObjectType)).toEqual(undefined);
   });
 
   const grantedPermissions = ['x', 'y', 'z', 'xpto'];
@@ -307,16 +318,47 @@ enum HasPermissionsDirectivePolicy {
                 @${name}(permissions: ["x", "y"], policy: RESOLVER)
               publicField: String
               alsoPublic: String @${name}(permissions: [])
-              skipOnNullField: String @${name}(permissions: ["I don't have this permission, but hey I'm not providing the input so it should not care"])
+              """
+              I don't have this permission, but I'll providing the default input value 'null', so it should not care
+              """
+              skipOnNullDefaultField: String = null @${name}(permissions: ["skipOnNullDefaultField"])
               notProvidedField: String @${name}(permissions: ["I love permissions"])
+              """
+              I don't have this permission, but If I pass the value equal to null, this will be generate error of permission,
+              because null is different the default value
+              """
+              defaultValue: String = "defaultValue" @${name}(permissions: ["${defaultValuePermission}"])
             }
 
-            input SecondInput @${name}(permissions: ["no permission to use this input"]) {
-              number: Int
+            input SecondInput  {
+              number: Int @${name}(permissions: ["No permission to use this input"])
+            }
+
+            input ThirdInput {
+              defaultListValue: [Int!] = [10, 2] @${name}(permissions: ["${defaultValuePermission}"])
+              noDefaultListValue: [Int!] @${name}(permissions: ["${noDefaultListValuePermission}"])
+            }
+
+            input defaultObject {
+              number: Int = 10 @${name}(permissions: ["${defaultValuePermission}"])
+              name: String = "defaultObject" @${name}(permissions: ["${defaultValuePermission}"])
+            }
+            
+            input FourthInput {
+              defaultObjectValue: defaultObject
+            }
+
+            input defaultArrayObject {
+              name: String = "defaultArrayObject" @${name}(permissions: ["${defaultValuePermission}"])
+            }
+
+            input FifthInput {
+              defaultArrayObjectValue: [defaultArrayObject!]
             }
 
             type Query {
-              test(arg: InputObject, arg2: SecondInput, number: Int @${name}(permissions: ["no permission to use this argument"])): String
+              test(arg: InputObject, arg2: SecondInput, arg3: ThirdInput, arg4: FourthInput, arg5: FifthInput,
+              number: Int @${name}(permissions: ["no permission to use this argument"])): String
             }
           `,
           ],
@@ -330,7 +372,74 @@ enum HasPermissionsDirectivePolicy {
               email: "user@server.com"
               onlyAllowedMayRead: 42
               publicField: "hello"
-              skipOnNullField: null
+              skipOnNullDefaultField: null
+            }
+          )
+        }
+      `);
+
+      const sourceDefault = print(gql`
+        query {
+          test(
+            arg: {
+              alsoPublic: "world"
+              defaultValue: null
+              email: "user@server.com"
+              onlyAllowedMayRead: 42
+              publicField: "hello"
+              skipOnNullDefaultField: null
+            }
+          )
+        }
+      `);
+
+      const sourceDefaultListValue = print(gql`
+        query {
+          test(arg3: { defaultListValue: [10, 2] })
+        }
+      `);
+
+      const sourceDefaultListValue2 = print(gql`
+        query {
+          test(arg3: { defaultListValue: [8, 2] })
+        }
+      `);
+
+      const sourceNoDefaultListValue = print(gql`
+        query {
+          test(arg3: { noDefaultListValue: [10, 2] })
+        }
+      `);
+
+      const sourceDefaultObjectValue = print(gql`
+        query {
+          test(
+            arg4: { defaultObjectValue: { number: 10, name: "defaultObject" } }
+          )
+        }
+      `);
+
+      const sourceDefaultArrayObjectValue = print(gql`
+        query {
+          test(
+            arg5: {
+              defaultArrayObjectValue: [
+                { name: "defaultArrayObject" }
+                { name: "defaultArrayObject" }
+              ]
+            }
+          )
+        }
+      `);
+
+      const sourceDefaultArrayObjectValue2 = print(gql`
+        query {
+          test(
+            arg5: {
+              defaultArrayObjectValue: [
+                { name: "defaultArrayObject" }
+                { name: "defaultArrayObject2" }
+              ]
             }
           )
         }
@@ -352,15 +461,172 @@ enum HasPermissionsDirectivePolicy {
           {
             arg: {
               alsoPublic: 'world',
+              defaultValue: 'defaultValue',
               email: 'user@server.com',
               onlyAllowedMayRead: 42,
               publicField: 'hello',
-              skipOnNullField: null,
+              skipOnNullDefaultField: null,
             },
           },
           context,
           expect.any(Object),
         );
+      });
+
+      it('if NOT has permissions for a field, and pass the default list value, pass the argument to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceDefaultListValue,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg3: {
+              defaultListValue: [10, 2],
+            },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it(`if NOT has permissions for a field, and the field don't has a array default list value, return field resolver with null and missing permissions`, async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceNoDefaultListValue,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [
+            new GraphQLError(
+              `Missing Permissions: ${noDefaultListValuePermission}`,
+            ),
+          ],
+        });
+      });
+
+      it(`if NOT has permissions for a field, and don't pass the default list value, return field resolver with null and missing permissions`, async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceDefaultListValue2,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [
+            new GraphQLError(`Missing Permissions: ${defaultValuePermission}`),
+          ],
+        });
+      });
+
+      it('if NOT has permissions for field value, and pass the default object value, pass the argument to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceDefaultObjectValue,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg4: {
+              defaultObjectValue: {
+                name: 'defaultObject',
+                number: 10,
+              },
+            },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has permissions for field value, and pass the default array object value, pass the argument to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceDefaultArrayObjectValue,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg5: {
+              defaultArrayObjectValue: [
+                { name: 'defaultArrayObject' },
+                { name: 'defaultArrayObject' },
+              ],
+            },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it(`if NOT has permissions for field value, and don't pass the arguments with a default array object value, return field resolver with null and missing permissions`, async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(
+          schema,
+          sourceDefaultArrayObjectValue2,
+          undefined,
+          context,
+        );
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [
+            new GraphQLError(`Missing Permissions: ${defaultValuePermission}`),
+          ],
+        });
+        expect(mockResolver).not.toBeCalled();
       });
 
       it('if NOT has permissions for a field with THROW policy, returns null and do not call field resolver', async (): Promise<void> => {
@@ -394,10 +660,11 @@ enum HasPermissionsDirectivePolicy {
           {
             arg: {
               alsoPublic: 'world',
+              defaultValue: 'defaultValue',
               email: 'user@server.com',
               onlyAllowedMayRead: 42,
               publicField: 'hello',
-              skipOnNullField: null,
+              skipOnNullDefaultField: null,
             },
           },
           context,
@@ -405,6 +672,23 @@ enum HasPermissionsDirectivePolicy {
             missingPermissions: ['y'],
           }),
         );
+      });
+
+      it(`if NOT has permissions for a field and pass null for this field, but isn't the default value, calls field resolver with null and missing permissions`, async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: ['x'],
+        });
+        const result = await graphql(schema, sourceDefault, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: null,
+          },
+          errors: [
+            new GraphQLError(`Missing Permissions: ${defaultValuePermission}`),
+          ],
+        });
+        expect(mockResolver).not.toBeCalled();
       });
     });
 
@@ -438,7 +722,7 @@ enum HasPermissionsDirectivePolicy {
               secondMaskedEmail: String @${name}(permissions: ["xpto"], policy: RESOLVER)
             }
             type TwoResolver @${name}(permissions: ["y"], policy: RESOLVER) {
-              missingPermissions: [String! ]@${name}(permissions: ["z"], policy: RESOLVER)
+              missingPermissions: [String!]@${name}(permissions: ["z"], policy: RESOLVER)
             }
             type Query {
               test: MyRestrictedObject
@@ -641,11 +925,11 @@ enum HasPermissionsDirectivePolicy {
             ...directiveTypeDefs,
             gql`
             input InputObjectWithXYPermission @${name}(permissions: ["x", "y"], policy: RESOLVER) {
-              xyInput: Int
+              xyInput: Int = 2
             }
 
             input InputObjectWithXPermission @${name}(permissions: ["x"]) {
-              xInput: String
+              xInput: String = "bInput"
             }
 
             input InputObjectWithoutPermission {
@@ -671,6 +955,16 @@ enum HasPermissionsDirectivePolicy {
         }
       `);
 
+      const sourceDefault = print(gql`
+        query {
+          test(
+            arg1: { xyInput: 2 }
+            arg2: { xInput: "bInput" }
+            arg3: { input: true }
+          )
+        }
+      `);
+
       it('if has all permissions, pass all arguments to resolver', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
@@ -687,6 +981,29 @@ enum HasPermissionsDirectivePolicy {
           {
             arg1: { xyInput: 42 },
             arg2: { xInput: 'aInput' },
+            arg3: { input: true },
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has all permissions, but use the default input values, pass all arguments to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(schema, sourceDefault, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg1: { xyInput: 2 },
+            arg2: { xInput: 'bInput' },
             arg3: { input: true },
           },
           context,
@@ -758,8 +1075,8 @@ enum HasPermissionsDirectivePolicy {
             ...directiveTypeDefs,
             gql`
             type Query {
-              test(argXYPermission: Int @${name}(permissions: ["x", "y"], policy: RESOLVER),
-               argXPermission: String @${name}(permissions: ["x"]),
+              test(argXYPermission: Int = 80 @${name}(permissions: ["x", "y"], policy: RESOLVER),
+               argXPermission: String = "bInput" @${name}(permissions: ["x"]),
                arg: Boolean): String
             }
           `,
@@ -769,6 +1086,12 @@ enum HasPermissionsDirectivePolicy {
       const source = print(gql`
         query {
           test(argXYPermission: 42, argXPermission: "aInput", arg: true)
+        }
+      `);
+
+      const sourceDefault = print(gql`
+        query {
+          test(argXYPermission: 80, argXPermission: "bInput", arg: true)
         }
       `);
 
@@ -789,6 +1112,29 @@ enum HasPermissionsDirectivePolicy {
             arg: true,
             argXPermission: 'aInput',
             argXYPermission: 42,
+          },
+          context,
+          expect.any(Object),
+        );
+      });
+
+      it('if NOT has permissions, but use the default values in arguments, pass all arguments to resolver', async (): Promise<void> => {
+        const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: undefined,
+        });
+        const result = await graphql(schema, sourceDefault, undefined, context);
+        expect(result).toEqual({
+          data: {
+            test: 'resolverReturn',
+          },
+        });
+        expect(mockResolver).toBeCalledWith(
+          undefined,
+          {
+            arg: true,
+            argXPermission: 'bInput',
+            argXYPermission: 80,
           },
           context,
           expect.any(Object),

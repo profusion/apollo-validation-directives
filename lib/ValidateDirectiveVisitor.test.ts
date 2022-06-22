@@ -684,6 +684,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -711,6 +712,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -734,6 +736,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: 'someOption' },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -757,6 +760,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -780,6 +784,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [null, value] },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -803,6 +808,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -826,6 +832,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: null },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -849,6 +856,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [value, null] },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -872,6 +880,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: null },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -923,6 +932,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value, notValidated: 12 },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -946,6 +956,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['arg'],
           );
           expect(mockValidate).toBeCalledWith(
             12,
@@ -955,6 +966,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['alsoValidated'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -993,6 +1005,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [{ nonNullable: 1 }] },
+            ['arg'],
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -1022,6 +1035,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             { defaultResolver: 42 },
             { arg: value },
+            ['arg'],
           );
         });
 
@@ -1046,6 +1060,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockValidate).toBeCalledWith(
             value * 2,
@@ -1055,6 +1070,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
         });
@@ -1098,6 +1114,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1124,6 +1141,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1154,6 +1172,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1184,6 +1203,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: 'someOption' },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1208,6 +1228,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1236,6 +1257,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1260,6 +1282,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [null, value] },
+            ['arg'],
           );
           expect(mockResolver).not.toBeCalled();
         });
@@ -1283,6 +1306,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1316,6 +1340,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [value, null] },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1347,6 +1372,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: value, notValidated: 12 },
+            ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1379,6 +1405,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['arg'],
           );
           expect(mockValidate).toBeCalledWith(
             12,
@@ -1388,6 +1415,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['alsoValidated'],
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1423,6 +1451,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['arg'],
           );
           expect(mockValidate).toBeCalledWith(
             12,
@@ -1432,6 +1461,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
+            ['alsoValidated'],
           );
           expect(mockResolver).toBeCalledTimes(1);
           expect(mockResolver).toBeCalledWith(
@@ -1498,6 +1528,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             expect.any(Object),
             undefined,
             { arg: [{ nonNullable: 1 }] },
+            ['arg'],
           );
           // note: mockResolver is not called, it's a custom resolver
           // that is validated based on the result.
@@ -1735,6 +1766,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect.any(Object),
         undefined,
         { arg: [{ nonNullable: value, notValidated: 42 }] },
+        ['arg', '0', 'nonNullable'],
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
@@ -1833,6 +1865,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           arg: [{ nullable: value, nullableString: null }],
           other: { list: [1] },
         },
+        ['arg', '0', 'nullable'],
       );
       expect(mockValidate).toBeCalledWith(
         { list: [1] },
@@ -1845,6 +1878,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           arg: [{ nullable: value, nullableString: null }],
           other: { list: [1] },
         },
+        ['other'],
       );
       expect(mockResolver).toBeCalledTimes(1);
     });
@@ -1923,11 +1957,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         value,
         GraphQLInt,
-        schema.getType('TestInput'),
+        schema.getType('TestInput') as GraphQLInputType,
         context,
         expect.any(Object),
         undefined,
         { arg: { value } },
+        ['arg', 'value'],
       );
       expect(mockValidate).toBeCalledWith(
         value * 2,
@@ -1937,6 +1972,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect.any(Object),
         undefined,
         { arg: { value } },
+        ['arg', 'value'],
       );
       expect(mockValidate).toBeCalledWith(
         { value },
@@ -1946,6 +1982,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect.any(Object),
         undefined,
         { arg: { value } },
+        ['arg'],
       );
       expect(mockResolver).toBeCalledTimes(1);
     });

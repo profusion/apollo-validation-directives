@@ -58,6 +58,7 @@ export type ValidateFunction<TContext = object> = {
     resolverInfo: AnyObject,
     resolverSource: unknown,
     resolverArgs: AnyObject,
+    path?: Array<string>,
   ): unknown;
   readonly validateProperties?: ValidateFunctionProperties;
 };
@@ -404,7 +405,9 @@ const validateEntryValueThrowing = <TContext>(
       fieldResolveParameters.info,
       fieldResolveParameters.source,
       fieldResolveParameters.args,
+      path,
     );
+
     if (value === undefined && value !== originalValue) {
       // mimics `GraphQLScalarType.serialize()` behavior
       throw new ValidationError('validation returned undefined');

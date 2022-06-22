@@ -38,6 +38,7 @@
     "@commitlint/cli": "^12.0.1",
     "@commitlint/config-angular": "^12.0.1",
     "@types/jest": "^26.0.20",
+    "@types/lodash.isequal": "^4.5.6",
     "@typescript-eslint/eslint-plugin": "^4.17.0",
     "@typescript-eslint/parser": "^4.17.0",
     "apollo-graphql": "^0.6.1",
@@ -65,6 +66,7 @@
   },
   "dependencies": {
     "graphql-tag": "^2.11.0",
-    "graphql-tools": "^4.0.8"
+    "graphql-tools": "^4.0.8",
+    "lodash.isequal": "^4.5.0"
   }
 }
