@@ -31,6 +31,13 @@ describe('@hasPermissions()', (): void => {
 
   const defaultValuePermission = `If use the default value, don't need this permission`;
   const noDefaultListValuePermission = `I don't has default list value in here`;
+  const skipOnNullDefaultField = `skip this permission on null equal default field`;
+  const noPermissionToUseThisInputOrArgument = `no Permission to use this`;
+  const notProvidedField = `Not provided Field`;
+  const permissionX = `x`;
+  const permissionY = `y`;
+  const permissionZ = `z`;
+  const permissionXPTO = `xpto`;
 
   it('exports correct typeDefs', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual([
@@ -66,7 +73,12 @@ enum HasPermissionsDirectivePolicy {
     expect(getDefaultValue(container as GraphQLObjectType)).toEqual(undefined);
   });
 
-  const grantedPermissions = ['x', 'y', 'z', 'xpto'];
+  const grantedPermissions = [
+    permissionX,
+    permissionY,
+    permissionZ,
+    permissionXPTO,
+  ];
 
   const createEmailResolver = (key = 'email') => (
     fields: { [key: string]: string },
@@ -83,7 +95,7 @@ enum HasPermissionsDirectivePolicy {
   };
 
   describe('filterMissingPermissions', (): void => {
-    const requiredPermissions = ['x', 'y', 'z'];
+    const requiredPermissions = [permissionX, permissionY, permissionZ];
     describe('debugFilterMissingPermissions()', (): void => {
       it('returns all if nothing is granted', (): void => {
         expect(
@@ -92,8 +104,11 @@ enum HasPermissionsDirectivePolicy {
       });
       it('returns all missing', (): void => {
         expect(
-          debugFilterMissingPermissions(new Set(['x']), requiredPermissions),
-        ).toEqual(['y', 'z']);
+          debugFilterMissingPermissions(
+            new Set([permissionX]),
+            requiredPermissions,
+          ),
+        ).toEqual([permissionY, permissionZ]);
       });
       it('returns null if all granted', (): void => {
         expect(
@@ -113,8 +128,11 @@ enum HasPermissionsDirectivePolicy {
       });
       it('returns first missing', (): void => {
         expect(
-          prodFilterMissingPermissions(new Set(['x']), requiredPermissions),
-        ).toEqual(['y']);
+          prodFilterMissingPermissions(
+            new Set([permissionX]),
+            requiredPermissions,
+          ),
+        ).toEqual([permissionY]);
       });
       it('returns null if all granted', (): void => {
         expect(
@@ -129,8 +147,8 @@ enum HasPermissionsDirectivePolicy {
 
   describe('getErrorMessage', (): void => {
     it('debugGetErrorMessage() is verbose', (): void => {
-      expect(debugGetErrorMessage(['x', 'y'])).toBe(
-        'Missing Permissions: x, y',
+      expect(debugGetErrorMessage([permissionX, permissionY])).toBe(
+        `Missing Permissions: ${permissionX}, ${permissionY}`,
       );
     });
     it('prodGetErrorMessage() is terse', (): void => {
@@ -146,7 +164,7 @@ enum HasPermissionsDirectivePolicy {
       });
       expect(
         ctx.checkMissingPermissions(
-          ['x'],
+          [permissionX],
           'ck1',
           {},
           {},
@@ -184,14 +202,14 @@ enum HasPermissionsDirectivePolicy {
       });
       expect(
         ctx.checkMissingPermissions(
-          ['x', 'y'],
+          [permissionX, permissionY],
           'ck1',
           {},
           {},
           {},
           {} as GraphQLResolveInfo,
         ),
-      ).toEqual(['x', 'y']);
+      ).toEqual([permissionX, permissionY]);
     });
 
     it('use default filterMissingPermissions', (): void => {
@@ -200,14 +218,14 @@ enum HasPermissionsDirectivePolicy {
       });
       expect(
         ctx.checkMissingPermissions(
-          ['x', 'y'],
+          [permissionX, permissionY],
           'ck1',
           {},
           {},
           {},
           {} as GraphQLResolveInfo,
         ),
-      ).toContain('x');
+      ).toContain(permissionX);
     });
   });
 
@@ -227,9 +245,9 @@ enum HasPermissionsDirectivePolicy {
             ...directiveTypeDefs,
             gql`
             type SomeObject {
-              onlyAllowedMayRead: Int @${name}(permissions: ["x", "y"])
+              onlyAllowedMayRead: Int @${name}(permissions: ["${permissionX}", "${permissionY}"])
               email: String
-                @${name}(permissions: ["x"], policy: RESOLVER)
+                @${name}(permissions: ["${permissionX}"], policy: RESOLVER)
               publicField: String
               alsoPublic: String @${name}(permissions: [])
             }
@@ -285,7 +303,11 @@ enum HasPermissionsDirectivePolicy {
               publicField: rootValue.test.publicField,
             },
           },
-          errors: [new ForbiddenError('Missing Permissions: x, y')],
+          errors: [
+            new ForbiddenError(
+              `Missing Permissions: ${permissionX}, ${permissionY}`,
+            ),
+          ],
         });
       });
     });
@@ -313,16 +335,16 @@ enum HasPermissionsDirectivePolicy {
             ...directiveTypeDefs,
             gql`
             input InputObject {
-              onlyAllowedMayRead: Int @${name}(permissions: ["x"])
+              onlyAllowedMayRead: Int @${name}(permissions: ["${permissionX}"])
               email: String
-                @${name}(permissions: ["x", "y"], policy: RESOLVER)
+                @${name}(permissions: ["${permissionX}", "${permissionY}"], policy: RESOLVER)
               publicField: String
               alsoPublic: String @${name}(permissions: [])
               """
               I don't have this permission, but I'll providing the default input value 'null', so it should not care
               """
-              skipOnNullDefaultField: String = null @${name}(permissions: ["skipOnNullDefaultField"])
-              notProvidedField: String @${name}(permissions: ["I love permissions"])
+              skipOnNullDefaultField: String = null @${name}(permissions: ["${skipOnNullDefaultField}"])
+              notProvidedField: String @${name}(permissions: ["${notProvidedField}"])
               """
               I don't have this permission, but If I pass the value equal to null, this will be generate error of permission,
               because null is different the default value
@@ -331,7 +353,7 @@ enum HasPermissionsDirectivePolicy {
             }
 
             input SecondInput  {
-              number: Int @${name}(permissions: ["No permission to use this input"])
+              number: Int @${name}(permissions: ["${noPermissionToUseThisInputOrArgument}"])
             }
 
             input ThirdInput {
@@ -358,7 +380,7 @@ enum HasPermissionsDirectivePolicy {
 
             type Query {
               test(arg: InputObject, arg2: SecondInput, arg3: ThirdInput, arg4: FourthInput, arg5: FifthInput,
-              number: Int @${name}(permissions: ["no permission to use this argument"])): String
+              number: Int @${name}(permissions: ["${noPermissionToUseThisInputOrArgument}"])): String
             }
           `,
           ],
@@ -639,7 +661,7 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: null,
           },
-          errors: [new ForbiddenError('Missing Permissions: x')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
         expect(mockResolver).not.toBeCalled();
       });
@@ -647,7 +669,7 @@ enum HasPermissionsDirectivePolicy {
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
@@ -669,7 +691,7 @@ enum HasPermissionsDirectivePolicy {
           },
           context,
           expect.objectContaining({
-            missingPermissions: ['y'],
+            missingPermissions: [permissionY],
           }),
         );
       });
@@ -677,7 +699,7 @@ enum HasPermissionsDirectivePolicy {
       it(`if NOT has permissions for a field and pass null for this field, but isn't the default value, calls field resolver with null and missing permissions`, async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(schema, sourceDefault, undefined, context);
         expect(result).toEqual({
@@ -714,15 +736,15 @@ enum HasPermissionsDirectivePolicy {
         typeDefs: [
           ...directiveTypeDefs,
           gql`
-            type MyRestrictedObject @${name}(permissions: ["x"]) {
-              restrictedField: Int # behaves as @hasPermissions(permissions: ["x"])
-              anotherRestrictedField: String # behaves as @hasPermissions(permissions: ["x"])
-              restrictedTwice: Int @${name}(permissions: ["y"])
-              maskedEmail: String @${name}(permissions: ["z"], policy: RESOLVER)
-              secondMaskedEmail: String @${name}(permissions: ["xpto"], policy: RESOLVER)
+            type MyRestrictedObject @${name}(permissions: ["${permissionX}"]) {
+              restrictedField: Int # behaves as @hasPermissions(permissions: ["${permissionX}"])
+              anotherRestrictedField: String # behaves as @hasPermissions(permissions: ["${permissionX}"])
+              restrictedTwice: Int @${name}(permissions: ["${permissionY}"])
+              maskedEmail: String @${name}(permissions: ["${permissionZ}"], policy: RESOLVER)
+              secondMaskedEmail: String @${name}(permissions: ["${permissionXPTO}"], policy: RESOLVER)
             }
-            type TwoResolver @${name}(permissions: ["y"], policy: RESOLVER) {
-              missingPermissions: [String!]@${name}(permissions: ["z"], policy: RESOLVER)
+            type TwoResolver @${name}(permissions: ["${permissionY}"], policy: RESOLVER) {
+              missingPermissions: [String!]@${name}(permissions: ["${permissionZ}"], policy: RESOLVER)
             }
             type Query {
               test: MyRestrictedObject
@@ -780,11 +802,11 @@ enum HasPermissionsDirectivePolicy {
             },
           },
           errors: [
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: y'),
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionY}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
           ],
         });
       });
@@ -792,7 +814,7 @@ enum HasPermissionsDirectivePolicy {
       it('combined hasPermissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
@@ -805,14 +827,14 @@ enum HasPermissionsDirectivePolicy {
               secondMaskedEmail: 'a******@email.com',
             },
           },
-          errors: [new ForbiddenError('Missing Permissions: y')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionY}`)],
         });
       });
 
       it('combined hasPermissions 2', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['y'],
+          grantedPermissions: [`${permissionY}`],
         });
         const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
@@ -826,11 +848,11 @@ enum HasPermissionsDirectivePolicy {
             },
           },
           errors: [
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
-            new ForbiddenError('Missing Permissions: x'),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
+            new ForbiddenError(`Missing Permissions: ${permissionX}`),
           ],
         });
       });
@@ -838,7 +860,7 @@ enum HasPermissionsDirectivePolicy {
       it('combined hasPermissions 3', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x', 'xpto'],
+          grantedPermissions: [permissionX, permissionXPTO],
         });
         const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
@@ -851,14 +873,14 @@ enum HasPermissionsDirectivePolicy {
               secondMaskedEmail: 'address@email.com',
             },
           },
-          errors: [new ForbiddenError('Missing Permissions: y')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionY}`)],
         });
       });
 
       it('combined hasPermissions 4', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x', 'z'],
+          grantedPermissions: [permissionX, permissionZ],
         });
         const result = await graphql(schema, source, rootValue, context);
         expect(result).toEqual({
@@ -871,14 +893,14 @@ enum HasPermissionsDirectivePolicy {
               secondMaskedEmail: 'a******@email.com',
             },
           },
-          errors: [new ForbiddenError('Missing Permissions: y')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionY}`)],
         });
       });
 
       it('two policy: RESOLVER missing permissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(
           schema,
@@ -895,7 +917,7 @@ enum HasPermissionsDirectivePolicy {
         expect(result).toEqual({
           data: {
             twoResolver: {
-              missingPermissions: ['y', 'z'],
+              missingPermissions: [permissionY, permissionZ],
             },
           },
         });
@@ -924,11 +946,11 @@ enum HasPermissionsDirectivePolicy {
           typeDefs: [
             ...directiveTypeDefs,
             gql`
-            input InputObjectWithXYPermission @${name}(permissions: ["x", "y"], policy: RESOLVER) {
+            input InputObjectWithXYPermission @${name}(permissions: ["${permissionX}", "${permissionY}"], policy: RESOLVER) {
               xyInput: Int = 2
             }
 
-            input InputObjectWithXPermission @${name}(permissions: ["x"]) {
+            input InputObjectWithXPermission @${name}(permissions: ["${permissionX}"]) {
               xInput: String = "bInput"
             }
 
@@ -1021,7 +1043,7 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: null,
           },
-          errors: [new ForbiddenError('Missing Permissions: x')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
         expect(mockResolver).not.toBeCalled();
       });
@@ -1029,7 +1051,7 @@ enum HasPermissionsDirectivePolicy {
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
@@ -1046,7 +1068,7 @@ enum HasPermissionsDirectivePolicy {
           },
           context,
           expect.objectContaining({
-            missingPermissions: ['y'],
+            missingPermissions: [permissionY],
           }),
         );
       });
@@ -1075,8 +1097,8 @@ enum HasPermissionsDirectivePolicy {
             ...directiveTypeDefs,
             gql`
             type Query {
-              test(argXYPermission: Int = 80 @${name}(permissions: ["x", "y"], policy: RESOLVER),
-               argXPermission: String = "bInput" @${name}(permissions: ["x"]),
+              test(argXYPermission: Int = 80 @${name}(permissions: ["${permissionX}", "${permissionY}"], policy: RESOLVER),
+               argXPermission: String = "bInput" @${name}(permissions: ["${permissionX}"]),
                arg: Boolean): String
             }
           `,
@@ -1151,7 +1173,7 @@ enum HasPermissionsDirectivePolicy {
           data: {
             test: null,
           },
-          errors: [new ForbiddenError('Missing Permissions: x')],
+          errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
         expect(mockResolver).not.toBeCalled();
       });
@@ -1159,7 +1181,7 @@ enum HasPermissionsDirectivePolicy {
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
         const context = HasPermissionsDirectiveVisitor.createDirectiveContext({
           filterMissingPermissions: debugFilterMissingPermissions,
-          grantedPermissions: ['x'],
+          grantedPermissions: [permissionX],
         });
         const result = await graphql(schema, source, undefined, context);
         expect(result).toEqual({
@@ -1176,7 +1198,7 @@ enum HasPermissionsDirectivePolicy {
           },
           context,
           expect.objectContaining({
-            missingPermissions: ['y'],
+            missingPermissions: [permissionY],
           }),
         );
       });
@@ -1214,7 +1236,7 @@ enum HasPermissionsDirectivePolicy {
         ...InjectMissingPermissions.getTypeDefs(),
         gql`
             type Query {
-              test: Boolean @${name}(permissions: ["z"]) @injectMissingPermissions
+              test: Boolean @${name}(permissions: ["${permissionZ}"]) @injectMissingPermissions
             }
           `,
       ],
