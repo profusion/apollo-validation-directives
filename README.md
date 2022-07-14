@@ -146,6 +146,22 @@ const server = new ApolloServer({
 });
 ```
 
+There are some cases where the checkMissingPermissions() function is not called, the cases are:
+
+  - `@hasPermissions` used on `InputObject`:
+    - No fields were sent;
+    - All fields of the received object are equal to their default values;
+
+  - `@hasPermissions` used on `InputFieldDefinition`:
+    - If the field is an `InputObject` (or list of):
+        - Same as `InputObject`;
+    - If the field is a `Scalar` (or list of):
+        - No value was sent in the annotated field;
+        - Value received in the field is equal to the default value;
+
+  - `@hasPermissions` used on `ArgumentDefinition`:
+    - Same as `InputFieldDefinition`;
+
 ## Value Validation
 
 The value validation directives do not require a specific context,
