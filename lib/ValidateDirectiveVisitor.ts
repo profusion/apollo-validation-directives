@@ -162,6 +162,11 @@ export type ValidatedInputError = {
   error: Error;
 };
 
+interface ValidateDirectiveError extends Error {
+  extensions?: AnyObject | undefined;
+  validationDirectiveShouldThrow?: boolean;
+}
+
 const containsNonNullField = (field: GraphQLInputField): boolean => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   return containsNonNull(field.type);
@@ -494,7 +499,13 @@ const validateEntryValue = <TContext>(
       fieldResolveParameters,
       policy,
     );
-  } catch (error) {
+  } catch (ex) {
+    const error: ValidateDirectiveError =
+      ex instanceof Error
+        ? ex
+        : /* istanbul ignore next: should never happen, but let's be safe */
+          new Error(`unknown error: ${ex}`);
+
     if (!isErrorRegistered(errors, error)) {
       // eventually the error was registered and we shouldn't do it again
       errors.push({
