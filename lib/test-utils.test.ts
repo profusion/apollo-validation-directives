@@ -1,10 +1,7 @@
 import type { GraphQLSchema } from 'graphql';
 import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
-import type {
-  ExecutionResultDataDefault,
-  ExecutionResult,
-} from 'graphql/execution/execute';
+import type { ExecutionResult } from 'graphql/execution/execute';
 import gql from 'graphql-tag';
 
 import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
@@ -16,19 +13,18 @@ export const minimalTypeDef = gql`
   }
 `;
 
-export type CreateSchemaConfig<TValue> = {
+export type CreateSchemaConfig<TValue, TResult = TValue> = {
   DirectiveVisitor: typeof EasyDirectiveVisitor;
   name: string;
-  testCase: TestCase<TValue>;
+  testCase: TestCase<TValue, TResult>;
 };
-export type CreateSchema<TValue> = (
-  config: CreateSchemaConfig<TValue>,
+export type CreateSchema<TValue, TResult = TValue> = (
+  config: CreateSchemaConfig<TValue, TResult>,
 ) => GraphQLSchema;
 
-export type ExpectedTestResult<TData = ExecutionResultDataDefault> =
-  ExecutionResult<TData>;
+export type ExpectedTestResult<TData> = ExecutionResult<TData>;
 
-export type TestCase<TValue, TResult = ExecutionResultDataDefault> = {
+export type TestCase<TValue, TResult = TValue> = {
   directiveArgs: string;
   // if provided then createSchema() is expected to fail
   error?: Error;
@@ -58,7 +54,7 @@ export const validationDirectivePolicyArgs = (name: string): string => `\
 """How to handle validation errors"""
   policy: ${name}ValidateDirectivePolicy = RESOLVER`;
 
-export const testEasyDirective = <TValue>({
+export const testEasyDirective = <TValue, TResult>({
   createSchema,
   name,
   DirectiveVisitor,
@@ -66,13 +62,13 @@ export const testEasyDirective = <TValue>({
   expectedUnknownTypeDefs = validationDirectionEnumTypeDefs(capitalize(name)),
   testCases,
 }: {
-  createSchema: CreateSchema<TValue>;
+  createSchema: CreateSchema<TValue, TResult>;
   name: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   DirectiveVisitor: any;
   expectedArgsTypeDefs?: string;
   expectedUnknownTypeDefs?: string;
-  testCases: TestCase<TValue>[];
+  testCases: TestCase<TValue, TResult>[];
 }): void => {
   describe(`directive @${name}`, (): void => {
     const { locations } = DirectiveVisitor.config;
@@ -100,7 +96,7 @@ ${expectedUnknownTypeDefs}\
     });
 
     describe('validate works', (): void => {
-      testCases.forEach((testCase: TestCase<TValue>): void => {
+      testCases.forEach((testCase: TestCase<TValue, TResult>): void => {
         const {
           directiveArgs,
           error,
@@ -127,7 +123,9 @@ ${expectedUnknownTypeDefs}\
               }): void => {
                 const rootValue = itemRootValue || fallbackRootValue;
                 const operation = itemOperation || fallbackOperation;
-                const expected = itemExpected || { data: rootValue };
+                const expected = itemExpected || {
+                  data: rootValue as unknown as TResult,
+                };
                 const { errors } = expected || {};
                 it(`value ${JSON.stringify(rootValue)} ${
                   errors

@@ -4,8 +4,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';
 import { ValidationError } from 'apollo-server-errors';
 
-import type { ValidateFunction } from './ValidateDirectiveVisitor';
-import type { ForeignNodeIdContext, ToNodeId } from './foreignNodeId';
+import type { ToNodeId } from './foreignNodeId';
 import ForeignNodeIdDirective from './foreignNodeId';
 import {
   validationDirectivePolicyArgs,
@@ -180,27 +179,22 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       { id: 'id4', typeName: 'Type4' },
       { id: 'aaaaa', typeName: 'Type5' },
     ];
-    const jestMocks: jest.Mock[] = [];
-    class TestDirective extends ForeignNodeIdDirective<
-      string,
-      ForeignNodeIdContext
-    > {
-      public getValidationForArgs():
-        | ValidateFunction<ForeignNodeIdContext>
-        | undefined {
-        const func = super.getValidationForArgs();
-        if (func) {
-          const mock = jest.fn(func);
-          jestMocks.push(mock);
-          return mock;
-        }
-        return undefined;
-      }
-    }
-    const schema = TestDirective.addValidationResolversToSchema(
+    const schema = ForeignNodeIdDirective.addValidationResolversToSchema(
       makeExecutableSchema({
+        resolvers: {
+          Query: {
+            work: (_, { arg, input }) => [
+              arg,
+              input.typeId,
+              input.typeId2,
+              input.typeId3,
+              input.typeId4,
+              input.typeId5,
+            ],
+          },
+        },
         schemaDirectives: {
-          foreignNodeId: TestDirective,
+          foreignNodeId: ForeignNodeIdDirective,
         },
         typeDefs: [
           ...directiveTypeDefs,
@@ -216,7 +210,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               work(
                 input: Input1!
                 arg: ID! @foreignNodeId(typename: "${idsMap[0].typeName}")
-              ): Boolean
+              ): [String]!
             }
           `,
         ],
@@ -238,9 +232,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         typeId5: null,
       },
     };
+    const workResult = idsMap
+      .map(({ id }) => id as string | null)
+      .concat([null]);
     const rootValue = {
-      secondWork: true,
-      work: true,
+      secondWork: workResult,
+      work: workResult,
     };
 
     const context = ForeignNodeIdDirective.createDirectiveContext({
@@ -248,10 +245,5 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
     const result = await graphql(schema, source, rootValue, context, variables);
     expect(result).toEqual({ data: rootValue });
-    jestMocks.forEach(({ mock: { results } }, i): void => {
-      expect(results[0].value).toEqual(
-        i === jestMocks.length - 1 ? null : idsMap[i].id,
-      );
-    });
   });
 });

@@ -461,6 +461,7 @@ const validateEntryValueThrowing = <TContext>(
 
   // istanbul ignore else (shouldn't reach)
   if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
+    // istanbul ignore if  (shouldn't reach with newer graphql, but used to happen before -- ie: invalid enums)
     if (type.serialize(value) === undefined) {
       throw new ValidationError(
         `${type.name}.serialize() returned undefined for value: ${value}`,
@@ -530,6 +531,7 @@ const validateEntryValue = <TContext>(
       if (error.validationDirectiveShouldThrow === undefined && isThrowPolicy) {
         error.validationDirectiveShouldThrow = true;
       }
+      // istanbul ignore if  (shouldn't reach with newer graphql, but used to happen before)
       if (error.extensions === undefined) {
         error.extensions = {};
       }

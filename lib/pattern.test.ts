@@ -20,10 +20,14 @@ type RootValue = {
   obj?: { toString(): string };
 };
 
+type ResultValue = Omit<RootValue, 'obj'> & {
+  obj?: { toString: string };
+};
+
 const createSchema = ({
   name,
   testCase: { directiveArgs },
-}: CreateSchemaConfig<RootValue>): GraphQLSchema =>
+}: CreateSchemaConfig<RootValue, ResultValue>): GraphQLSchema =>
   pattern.addValidationResolversToSchema(
     makeExecutableSchema({
       resolvers: {
@@ -53,7 +57,7 @@ const createSchema = ({
 const expectedValidationError = (
   message: string,
   key: keyof RootValue = 'test',
-): ExpectedTestResult<RootValue> => ({
+): ExpectedTestResult<ResultValue> => ({
   data: { [key]: null },
   errors: [new ValidationError(message)],
 });

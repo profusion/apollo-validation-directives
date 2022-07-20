@@ -9,6 +9,7 @@ import type {
 import {
   graphql,
   GraphQLBoolean,
+  GraphQLError,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
@@ -53,10 +54,7 @@ describe('ValidateDirectiveVisitor', (): void => {
 
   const commonTypeDefs = [
     `\
-"""
-type of the list entry given as \`validationErrors\` argument that is injected
-into every field resolver with validated arguments
-"""
+"""type of the list entry given as \`validationErrors\` argument that is injected into every field resolver with validated arguments"""
 input ValidatedInputError {
   """The error/exception message that caused the validation error"""
   message: String!
@@ -1191,8 +1189,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullableEnum: null },
             errors: [
-              new ValidationError(
-                'MyEnum.serialize() returned undefined for value: invalidValue',
+              new GraphQLError(
+                'Enum "MyEnum" cannot represent value: "invalidValue"',
               ),
             ],
           });

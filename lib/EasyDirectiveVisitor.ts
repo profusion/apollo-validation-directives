@@ -116,7 +116,14 @@ const patchDirective = (
     Object.entries(args).forEach(
       ([
         argName,
-        { astNode, defaultValue, description = null, extensions, type },
+        {
+          astNode,
+          defaultValue,
+          deprecationReason,
+          description,
+          extensions,
+          type,
+        },
       ]) => {
         const arg = directive.args.find(({ name }) => argName === name);
         if (arg) {
@@ -125,6 +132,7 @@ const patchDirective = (
           directive.args.push({
             astNode,
             defaultValue,
+            deprecationReason,
             description,
             extensions,
             name: argName,

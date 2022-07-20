@@ -30,8 +30,8 @@ describe('EasyDirectiveVisitor', (): void => {
     description: 'test custom enum',
     name: 'SomeEnum',
     values: {
-      aValue: { value: 1 },
-      bValue: { value: 2 },
+      aValue: { value: 'aValue' },
+      bValue: { value: 'bValue' },
     },
   });
   const SomeType = new GraphQLObjectType({
@@ -170,7 +170,8 @@ enum SomeEnum {
               name: expect.objectContaining({ kind: 'Name', value: 'alien' }),
             }),
             defaultValue: 123,
-            description: '',
+            deprecationReason: undefined,
+            description: undefined,
             extensions: undefined,
             type: GraphQLInt,
           },
@@ -290,8 +291,8 @@ enum SomeEnum {
             type: new GraphQLEnumType({
               name: 'CustomEnum',
               values: {
-                enumValueHere: { value: 1 },
-                otherValueHere: { value: 2 },
+                enumValueHere: { value: 'enumValueHere' },
+                otherValueHere: { value: 'otherValueHere' },
               },
             }),
           },
@@ -313,30 +314,35 @@ enum SomeEnum {
         ...DirectiveWithArgs.config.args.bool,
         astNode: undefined,
         defaultValue: undefined,
-        description: null,
+        deprecationReason: undefined,
+        description: undefined,
         extensions: undefined,
       },
       complex: {
         ...DirectiveWithArgs.config.args.complex,
         astNode: undefined,
+        deprecationReason: undefined,
         extensions: undefined,
       },
       customEnum: {
         ...DirectiveWithArgs.config.args.customEnum,
         astNode: undefined,
-        description: null,
+        deprecationReason: undefined,
+        description: undefined,
         extensions: undefined,
       },
       int: {
         ...DirectiveWithArgs.config.args.int,
         astNode: undefined,
-        description: null,
+        deprecationReason: undefined,
+        description: undefined,
         extensions: undefined,
       },
       nullField: {
         ...DirectiveWithArgs.config.args.nullField,
         astNode: undefined,
-        description: null,
+        deprecationReason: undefined,
+        description: undefined,
         extensions: undefined,
       },
     };
@@ -385,7 +391,8 @@ enum SomeEnum {
               name: expect.objectContaining({ kind: 'Name', value: 'alien' }),
             }),
             defaultValue: 123,
-            description: '',
+            deprecationReason: undefined,
+            description: undefined,
             extensions: undefined,
             type: GraphQLInt,
           },
@@ -440,7 +447,7 @@ directive @${name}(
   bool: Boolean
   """some docs for complex argument"""
   complex: [InputType]! = [{field: {value: 42}}]
-  customEnum: CustomEnum
+  customEnum: CustomEnum = enumValueHere
   int: Int = 12
   nullField: Int = null
 ) on ${locationsStr}
