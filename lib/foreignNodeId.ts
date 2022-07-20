@@ -21,7 +21,7 @@ export type Args = {
 
 export default class ForeignNodeIdDirective<
   IdType,
-  _ extends ForeignNodeIdContext<IdType>
+  _ extends ForeignNodeIdContext<IdType>,
 > extends ValidateDirectiveVisitor<Args, ForeignNodeIdContext<IdType>> {
   public getValidationForArgs():
     | ValidateFunction<ForeignNodeIdContext<IdType>>

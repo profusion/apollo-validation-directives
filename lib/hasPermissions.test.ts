@@ -80,19 +80,21 @@ enum HasPermissionsDirectivePolicy {
     permissionXPTO,
   ];
 
-  const createEmailResolver = (key = 'email') => (
-    fields: { [key: string]: string },
-    _: unknown,
-    __: unknown,
-    { missingPermissions }: MissingPermissionsResolverInfo,
-  ): string => {
-    const email = fields[key];
-    if (missingPermissions) {
-      const [user, domain] = email.split('@');
-      return `${user[0]}${'*'.repeat(user.length - 1)}@${domain}`;
-    }
-    return email;
-  };
+  const createEmailResolver =
+    (key = 'email') =>
+    (
+      fields: { [key: string]: string },
+      _: unknown,
+      __: unknown,
+      { missingPermissions }: MissingPermissionsResolverInfo,
+    ): string => {
+      const email = fields[key];
+      if (missingPermissions) {
+        const [user, domain] = email.split('@');
+        return `${user[0]}${'*'.repeat(user.length - 1)}@${domain}`;
+      }
+      return email;
+    };
 
   describe('filterMissingPermissions', (): void => {
     const requiredPermissions = [permissionX, permissionY, permissionZ];

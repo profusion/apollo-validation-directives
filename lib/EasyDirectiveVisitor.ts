@@ -18,13 +18,11 @@ import {
 import gql from 'graphql-tag';
 import { SchemaDirectiveVisitor } from 'graphql-tools';
 
-export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<
-  {
-    [P in keyof Omit<GraphQLDirectiveConfig, 'name'>]: Readonly<
-      GraphQLDirectiveConfig[P]
-    >;
-  }
->;
+export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<{
+  [P in keyof Omit<GraphQLDirectiveConfig, 'name'>]: Readonly<
+    GraphQLDirectiveConfig[P]
+  >;
+}>;
 
 // TODO: is there any exported version of this?
 // I just found a way to print directive via printSchema()
@@ -172,7 +170,7 @@ export const getDirectiveDeclaration = (
  *    `config`.
  */
 abstract class EasyDirectiveVisitor<
-  TArgs extends object
+  TArgs extends object,
 > extends SchemaDirectiveVisitor {
   args: TArgs;
 

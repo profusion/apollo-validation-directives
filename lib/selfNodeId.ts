@@ -18,7 +18,7 @@ export type SelfNodeIdContext<_ extends object = object> = {
 };
 
 export default class SelfNodeIdDirective<
-  _ extends SelfNodeIdContext
+  _ extends SelfNodeIdContext,
 > extends ValidateDirectiveVisitor<ValidationDirectiveArgs, SelfNodeIdContext> {
   public getValidationForArgs(): ValidateFunction<SelfNodeIdContext> {
     const errorMessage = `${this.name} directive only works on strings`;

@@ -31,9 +31,8 @@ interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];
 }
 
-const defaultLocationsStr = ValidateDirectiveVisitor.config.locations.join(
-  ' | ',
-);
+const defaultLocationsStr =
+  ValidateDirectiveVisitor.config.locations.join(' | ');
 
 const getFieldArg = (
   type: GraphQLObjectType,
@@ -1551,7 +1550,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         },
       };
 
-      public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = false;
+      public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
+        false;
 
       public getValidationForArgs(): ValidateFunction | undefined {
         return this.args.validate ? mockValidate : undefined;

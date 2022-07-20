@@ -21,26 +21,26 @@ export const defaultArgs = {
   regexp: { type: new GraphQLNonNull(GraphQLString) },
 };
 
-const createPatternHandler = (handler: PatternHandler): ValidateFunction => (
-  value: unknown,
-): unknown => {
-  let str = '';
-  // istanbul ignore else (should not reach)
-  if (typeof value === 'string') {
-    str = value;
-  } else if (typeof value === 'number' || typeof value === 'boolean') {
-    str = value.toString();
-  } else if (typeof value === 'object') {
-    if (value === null) {
+const createPatternHandler =
+  (handler: PatternHandler): ValidateFunction =>
+  (value: unknown): unknown => {
+    let str = '';
+    // istanbul ignore else (should not reach)
+    if (typeof value === 'string') {
+      str = value;
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+      str = value.toString();
+    } else if (typeof value === 'object') {
+      if (value === null) {
+        return value;
+      }
+      str = value.toString();
+    } else if (value === undefined) {
       return value;
+    } else {
+      throw new ValidationError('could not convert value to string');
     }
-    str = value.toString();
-  } else if (value === undefined) {
-    return value;
-  } else {
-    throw new ValidationError('could not convert value to string');
-  }
-  return handler(str, value);
-};
+    return handler(str, value);
+  };
 
 export default createPatternHandler;

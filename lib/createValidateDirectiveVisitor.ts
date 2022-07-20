@@ -9,7 +9,7 @@ export type CreateValidate<TArgs extends object> = (
 ) => ValidateFunction | undefined;
 
 export class ConcreteValidateDirectiveVisitor<
-  TArgs extends ValidationDirectiveArgs
+  TArgs extends ValidationDirectiveArgs,
 > extends ValidateDirectiveVisitor<TArgs> {
   // istanbul ignore next (this shouldn't be used)
   // eslint-disable-next-line class-methods-use-this

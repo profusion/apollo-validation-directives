@@ -119,13 +119,15 @@ export const getDefaultValue = (
 };
 
 export class HasPermissionsDirectiveVisitor<
-  TContext extends HasPermissionsContext
+  TContext extends HasPermissionsContext,
 > extends ValidateDirectiveVisitor<HasPermissionsDirectiveArgs, TContext> {
   public static readonly defaultName: string = 'hasPermissions';
 
-  public static readonly defaultPolicy: ValidateDirectivePolicy = defaultPolicyOutsideClass;
+  public static readonly defaultPolicy: ValidateDirectivePolicy =
+    defaultPolicyOutsideClass;
 
-  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = false;
+  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
+    false;
 
   public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
     args: {
@@ -253,7 +255,7 @@ export class HasPermissionsDirectiveVisitor<
         resolverSource,
         resolverArgs,
         context,
-        (resolverInfo as unknown) as GraphQLResolveInfo,
+        resolverInfo as unknown as GraphQLResolveInfo,
       ]);
       if (!(missingPermissions && missingPermissions.length > 0)) {
         missingPermissions = null;

@@ -634,7 +634,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
 // the validation will be chained:
 // validate(previousValidation(resolvedValue))`
 export const setFieldResolveToApplyOriginalResolveAndThenValidateResult = <
-  TContext
+  TContext,
 >(
   field: GraphQLField<unknown, TContext>,
   validate: ValidateFunction<TContext>,
@@ -780,12 +780,10 @@ const collectInputObjectsAndFieldsWithArguments = (
  */
 abstract class ValidateDirectiveVisitor<
   TArgs extends ValidationDirectiveArgs,
-  TContext = object
+  TContext = object,
 > extends EasyDirectiveVisitor<TArgs> {
-  public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] = [
-    validatedInputErrorListType,
-    validatedErrorOutputType,
-  ] as const;
+  public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] =
+    [validatedInputErrorListType, validatedErrorOutputType] as const;
 
   public static readonly config: typeof EasyDirectiveVisitor['config'] = {
     locations: [
@@ -800,7 +798,8 @@ abstract class ValidateDirectiveVisitor<
   public static readonly defaultPolicy: ValidateDirectivePolicy =
     ValidateDirectivePolicy.RESOLVER;
 
-  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean = true;
+  public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
+    true;
 
   public static getDirectiveDeclaration(
     givenDirectiveName?: string,
@@ -879,10 +878,8 @@ abstract class ValidateDirectiveVisitor<
   public static addValidationResolversToSchema(
     schema: GraphQLSchema,
   ): GraphQLSchema {
-    const {
-      fieldsWithArguments,
-      inputObjects,
-    } = collectInputObjectsAndFieldsWithArguments(schema);
+    const { fieldsWithArguments, inputObjects } =
+      collectInputObjectsAndFieldsWithArguments(schema);
 
     markInputObjectsRequiringValidation(inputObjects);
 

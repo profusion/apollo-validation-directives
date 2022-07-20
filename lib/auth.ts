@@ -20,7 +20,7 @@ export type AuthContext<TContext extends object = object> = {
 };
 
 export class AuthDirectiveVisitor<
-  TContext extends AuthContext
+  TContext extends AuthContext,
 > extends EasyDirectiveVisitor<{}> {
   public errorMessage = 'Unauthenticated';
 

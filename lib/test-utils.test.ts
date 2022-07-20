@@ -24,9 +24,8 @@ export type CreateSchema<TValue> = (
   config: CreateSchemaConfig<TValue>,
 ) => GraphQLSchema;
 
-export type ExpectedTestResult<
-  TData = ExecutionResultDataDefault
-> = ExecutionResult<TData>;
+export type ExpectedTestResult<TData = ExecutionResultDataDefault> =
+  ExecutionResult<TData>;
 
 export type TestCase<TValue, TResult = ExecutionResultDataDefault> = {
   directiveArgs: string;
