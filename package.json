@@ -60,7 +60,7 @@
     "graphql": "^14.7.0"
   },
   "dependencies": {
-    "graphql-tag": "^2.11.0",
+    "graphql-tag": "^2.12.6",
     "graphql-tools": "^4.0.8",
     "lodash.isequal": "^4.5.0"
   }
