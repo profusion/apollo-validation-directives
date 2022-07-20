@@ -7,13 +7,6 @@
   "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
   "license": "MIT",
   "repository": "https://github.com/profusion/apollo-validation-directives",
-  "husky": {
-    "hooks": {
-      "pre-commit": "yarn lint-staged && yarn test --coverage",
-      "pre-push": "yarn lint && yarn test --coverage",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
-  },
   "lint-staged": {
     "*.{ts, js}": [
       "eslint",
@@ -30,6 +23,7 @@
     "lint": "run-s check-types run-lint",
     "build": "tsc",
     "test": "jest",
+    "prepare": "husky install",
     "prepublishOnly": "tsc"
   },
   "devDependencies": {
@@ -51,7 +45,7 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.2.1",
     "graphql": "^14.7.0",
-    "husky": "^4.3.8",
+    "husky": "^8.0.1",
     "install-peers-cli": "^2.2.0",
     "jest": "^28.1.3",
     "lint-staged": "^13.0.3",
