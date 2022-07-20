@@ -1,6 +1,6 @@
 import { GraphQLEnumType, GraphQLNonNull } from 'graphql';
 
-import {
+import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';

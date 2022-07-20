@@ -1,12 +1,13 @@
-import { graphql, GraphQLSchema } from 'graphql';
+import type { GraphQLSchema } from 'graphql';
+import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
-import {
+import type {
   ExecutionResultDataDefault,
   ExecutionResult,
 } from 'graphql/execution/execute';
 import gql from 'graphql-tag';
 
-import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
 import capitalize from './capitalize';
 
 export const minimalTypeDef = gql`

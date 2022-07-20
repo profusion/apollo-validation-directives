@@ -1,23 +1,25 @@
-import {
-  defaultFieldResolver,
-  DirectiveLocation,
+import type {
   DocumentNode,
   GraphQLArgument,
   GraphQLDirective,
-  GraphQLEnumType,
   GraphQLField,
   GraphQLInputField,
-  GraphQLInputObjectType,
   GraphQLInputType,
   GraphQLInterfaceType,
-  GraphQLList,
   GraphQLNamedType,
+  GraphQLSchema,
+  DirectiveLocationEnum,
+} from 'graphql';
+import {
+  defaultFieldResolver,
+  DirectiveLocation,
+  GraphQLEnumType,
+  GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLScalarType,
-  GraphQLSchema,
   GraphQLString,
-  DirectiveLocationEnum,
 } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 

@@ -1,4 +1,5 @@
-import { GraphQLResolveInfo, graphql } from 'graphql';
+import type { GraphQLResolveInfo } from 'graphql';
+import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
 import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';

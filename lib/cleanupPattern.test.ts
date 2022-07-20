@@ -1,13 +1,12 @@
-import { GraphQLSchema } from 'graphql';
+import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from 'graphql-tools';
 
 import cleanupPattern from './cleanupPattern';
 import capitalize from './capitalize';
 
+import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
 import {
-  CreateSchemaConfig,
-  ExpectedTestResult,
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';

@@ -1,24 +1,26 @@
+import type {
+  GraphQLField,
+  GraphQLObjectType,
+  GraphQLResolveInfo,
+} from 'graphql';
 import {
   defaultFieldResolver,
   DirectiveLocation,
   graphql,
   GraphQLError,
-  GraphQLField,
-  GraphQLObjectType,
-  GraphQLResolveInfo,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
 import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';
 import { ForbiddenError } from 'apollo-server-errors';
 
+import type { MissingPermissionsResolverInfo } from './hasPermissions';
 import {
   debugFilterMissingPermissions,
   debugGetErrorMessage,
   HasPermissionsDirectiveVisitor,
   prodFilterMissingPermissions,
   prodGetErrorMessage,
-  MissingPermissionsResolverInfo,
   getDefaultValue,
 } from './hasPermissions';
 

@@ -4,11 +4,9 @@ import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';
 import { ValidationError } from 'apollo-server-errors';
 
-import { ValidateFunction } from './ValidateDirectiveVisitor';
-import ForeignNodeIdDirective, {
-  ForeignNodeIdContext,
-  ToNodeId,
-} from './foreignNodeId';
+import type { ValidateFunction } from './ValidateDirectiveVisitor';
+import type { ForeignNodeIdContext, ToNodeId } from './foreignNodeId';
+import ForeignNodeIdDirective from './foreignNodeId';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,

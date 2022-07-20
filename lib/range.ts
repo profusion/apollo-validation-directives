@@ -1,7 +1,7 @@
 import { GraphQLFloat } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
-import {
+import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';

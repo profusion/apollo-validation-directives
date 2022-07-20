@@ -1,7 +1,8 @@
-import ValidateDirectiveVisitor, {
+import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
 export type CreateValidate<TArgs extends object> = (

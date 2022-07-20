@@ -1,9 +1,10 @@
 import { ApolloServer } from 'apollo-server';
 import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';
-import { ValidationError } from 'apollo-server-errors';
+import type { ValidationError } from 'apollo-server-errors';
 
-import { graphql, print, GraphQLResolveInfo } from 'graphql';
+import type { GraphQLResolveInfo } from 'graphql';
+import { graphql, print } from 'graphql';
 
 import {
   listLength,

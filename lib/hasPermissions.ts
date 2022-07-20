@@ -1,11 +1,6 @@
 import { ForbiddenError } from 'apollo-server-errors';
-import {
-  DirectiveLocation,
-  GraphQLEnumType,
+import type {
   GraphQLFieldResolver,
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLString,
   GraphQLResolveInfo,
   GraphQLSchema,
   DirectiveLocationEnum,
@@ -13,6 +8,13 @@ import {
   GraphQLInputObjectType,
   GraphQLArgument,
   GraphQLObjectType,
+} from 'graphql';
+import {
+  DirectiveLocation,
+  GraphQLEnumType,
+  GraphQLList,
+  GraphQLNonNull,
+  GraphQLString,
   isInputObjectType,
 } from 'graphql';
 
@@ -20,9 +22,9 @@ import isEqual from 'lodash.isequal';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
+import type { ValidateFunction } from './ValidateDirectiveVisitor';
 import ValidateDirectiveVisitor, {
   ValidateDirectivePolicy,
-  ValidateFunction,
 } from './ValidateDirectiveVisitor';
 
 const isDebug = !!(

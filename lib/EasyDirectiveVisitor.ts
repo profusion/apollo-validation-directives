@@ -1,16 +1,18 @@
-import {
-  astFromValue,
+import type {
   DocumentNode,
   GraphQLArgument,
-  GraphQLDirective,
   GraphQLDirectiveConfig,
-  GraphQLInputObjectType,
   GraphQLInputType,
-  GraphQLList,
   GraphQLNamedType,
-  GraphQLNonNull,
   GraphQLSchema,
   GraphQLType,
+} from 'graphql';
+import {
+  astFromValue,
+  GraphQLDirective,
+  GraphQLInputObjectType,
+  GraphQLList,
+  GraphQLNonNull,
   isSpecifiedScalarType,
   print,
   printType,

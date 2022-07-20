@@ -1,11 +1,7 @@
-import {
-  GraphQLInputType,
-  GraphQLList,
-  GraphQLNamedType,
-  GraphQLNonNull,
-} from 'graphql';
+import type { GraphQLInputType, GraphQLNamedType } from 'graphql';
+import { GraphQLList, GraphQLNonNull } from 'graphql';
 
-import { ValidateFunction } from './ValidateDirectiveVisitor';
+import type { ValidateFunction } from './ValidateDirectiveVisitor';
 
 const getListItemType = (
   type: GraphQLNamedType | GraphQLInputType,

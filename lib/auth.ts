@@ -1,13 +1,12 @@
 import { AuthenticationError } from 'apollo-server-errors';
 
-import {
-  defaultFieldResolver,
-  DirectiveLocation,
+import type {
   GraphQLField,
   GraphQLFieldResolver,
   GraphQLInterfaceType,
   GraphQLObjectType,
 } from 'graphql';
+import { defaultFieldResolver, DirectiveLocation } from 'graphql';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 

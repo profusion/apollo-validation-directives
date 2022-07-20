@@ -1,25 +1,28 @@
-import {
-  graphql,
+import type {
   GraphQLArgument,
-  GraphQLBoolean,
   GraphQLEnumType,
   GraphQLInputType,
-  GraphQLInt,
-  GraphQLList,
-  GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
   GraphQLSchema,
+} from 'graphql';
+import {
+  graphql,
+  GraphQLBoolean,
+  GraphQLInt,
+  GraphQLList,
+  GraphQLNonNull,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
 
-import ValidateDirectiveVisitor, {
+import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,

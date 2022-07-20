@@ -1,8 +1,12 @@
-import { GraphQLSchema, DocumentNode, GraphQLFieldResolver } from 'graphql';
+import type {
+  GraphQLSchema,
+  DocumentNode,
+  GraphQLFieldResolver,
+} from 'graphql';
 import { ApolloServer, SchemaDirectiveVisitor, gql } from 'apollo-server';
 import { ApolloGateway } from '@apollo/gateway';
 import { buildFederatedSchema } from '@apollo/federation';
-import { GraphQLResolverMap } from 'apollo-graphql';
+import type { GraphQLResolverMap } from 'apollo-graphql';
 
 import { ValidateDirectiveVisitor, range, stringLength } from '../lib';
 

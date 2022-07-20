@@ -1,14 +1,13 @@
-import {
-  DirectiveLocation,
-  GraphQLObjectType,
-  GraphQLInterfaceType,
-} from 'graphql';
+import type { GraphQLObjectType, GraphQLInterfaceType } from 'graphql';
+import { DirectiveLocation } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
-import ValidateDirectiveVisitor, {
+import type {
   ValidateFunction,
-  setFieldResolveToApplyOriginalResolveAndThenValidateResult,
   ValidationDirectiveArgs,
+} from './ValidateDirectiveVisitor';
+import ValidateDirectiveVisitor, {
+  setFieldResolveToApplyOriginalResolveAndThenValidateResult,
 } from './ValidateDirectiveVisitor';
 
 type ToNodeId = (entityName: string, id: string) => string | null;

@@ -1,4 +1,4 @@
-import { GraphQLSchema } from 'graphql';
+import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from 'graphql-tools';
 
@@ -10,10 +10,12 @@ import trim, {
 } from './trim';
 import capitalize from './capitalize';
 
-import {
+import type {
   CreateSchemaConfig,
   ExpectedTestResult,
   TestCase,
+} from './test-utils.test';
+import {
   testEasyDirective,
   validationDirectionEnumTypeDefs,
   validationDirectivePolicyArgs,

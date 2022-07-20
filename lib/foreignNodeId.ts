@@ -1,10 +1,11 @@
 import { DirectiveLocation, GraphQLNonNull, GraphQLString } from 'graphql';
 import { ValidationError } from 'apollo-server-errors';
 
-import ValidateDirectiveVisitor, {
+import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
 export type ToNodeId<IdType> = (

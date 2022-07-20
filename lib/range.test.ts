@@ -1,4 +1,4 @@
-import { GraphQLSchema } from 'graphql';
+import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from 'graphql-tools';
 import { ValidationError } from 'apollo-server-errors';
@@ -6,9 +6,8 @@ import { ValidationError } from 'apollo-server-errors';
 import range from './range';
 import capitalize from './capitalize';
 
+import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
 import {
-  CreateSchemaConfig,
-  ExpectedTestResult,
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';
