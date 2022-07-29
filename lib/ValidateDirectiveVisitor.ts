@@ -219,8 +219,17 @@ const checkMustValidateInput = (
   if (finalType instanceof GraphQLInputObjectType) {
     const fieldsToCheck = Object.values(finalType.getFields()).filter(field => {
       if (field.type instanceof GraphQLList) {
+        if (field.type.ofType instanceof GraphQLNonNull) {
+          return finalType !== field.type.ofType.ofType;
+        }
+
         return finalType !== field.type.ofType;
       }
+
+      if (field.type instanceof GraphQLNonNull) {
+        return field.type.ofType !== finalType;
+      }
+
       return field.type !== finalType;
     });
 

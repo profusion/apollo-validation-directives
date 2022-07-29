@@ -1,4 +1,5 @@
 import type {
+  DocumentNode,
   GraphQLArgument,
   GraphQLEnumType,
   GraphQLInputType,
@@ -1988,53 +1989,62 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockResolver).toBeCalledTimes(1);
     });
   });
-});
 
-it('expects not to stack overflow on validation resolvers generation when input field refers itself as a field', (): void => {
-  const mockResolver = jest.fn((_, { arg }): object => arg);
+  describe('Recursive input field should not throw when input field type refers itself as', (): void => {
+    const recursiveInputTest = (gqlSchema: DocumentNode): void => {
+      const mockResolver = jest.fn((_, { arg }): object => arg);
 
-  const generateSchemaWithRecuriseInputArray: () => GraphQLSchema = () =>
-    ValidateDirectiveVisitor.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Mutation: {
-            mutationTest: mockResolver,
+      const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
+      ValidateDirectiveVisitor.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Mutation: {
+              mutationTest: mockResolver,
+            },
           },
-        },
-        schemaDirectives: {},
-        typeDefs: [
-          gql`
-            input TestInput {
-              a: [TestInput]
-            }
-            type Mutation {
-              mutationTest(input: TestInput!): String
-            }
-          `,
-        ],
-      }),
-    );
-  const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
-    ValidateDirectiveVisitor.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Mutation: {
-            mutationTest: mockResolver,
-          },
-        },
-        schemaDirectives: {},
-        typeDefs: [
-          gql`
-            input TestInput {
-              a: TestInput
-            }
-            type Mutation {
-              mutationTest(input: TestInput!): String
-            }
-          `,
-        ],
-      }),
-    );
-  expect(generateSchemaWithRecuriseInputArray).not.toThrow();
-  expect(generateSchemaWithRecursiveInput).not.toThrow();
+          schemaDirectives: {},
+          typeDefs: [
+            gqlSchema,
+          ],
+        }),
+      );
+      expect(generateSchemaWithRecursiveInput).not.toThrow();
+    };
+
+    it('an array of nullable fields', () => recursiveInputTest(gql`
+      input TestInput {
+        a: [TestInput]
+      }
+      type Mutation {
+        mutationTest(input: TestInput!): String
+      }
+    `));
+
+    it('a nullable field', () => recursiveInputTest(gql`
+      input TestInput {
+        a: TestInput
+      }
+      type Mutation {
+        mutationTest(input: TestInput!): String
+      }
+    `));
+
+    it('an array of non-nullable fields', () => recursiveInputTest(gql`
+      input TestInput {
+        a: [TestInput!]
+      }
+      type Mutation {
+        mutationTest(input: TestInput!): String
+      }
+    `));
+
+    it('as a non-nullable field', () => recursiveInputTest(gql`
+      input TestInput {
+        a: TestInput!
+      }
+      type Mutation {
+        mutationTest(input: TestInput!): String
+      }
+    `));
+  });
 });
