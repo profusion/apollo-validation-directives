@@ -1993,27 +1993,6 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 it('expects not to stack overflow on validation resolvers generation when input field refers itself as a field', (): void => {
   const mockResolver = jest.fn((_, { arg }): object => arg);
 
-  const generateSchemaWithRecuriseInputArray: () => GraphQLSchema = () =>
-    ValidateDirectiveVisitor.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Mutation: {
-            mutationTest: mockResolver,
-          },
-        },
-        schemaDirectives: {},
-        typeDefs: [
-          gql`
-            input TestInput {
-              a: [TestInput]
-            }
-            type Mutation {
-              mutationTest(input: TestInput!): String
-            }
-          `,
-        ],
-      }),
-    );
   const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
     ValidateDirectiveVisitor.addValidationResolversToSchema(
       makeExecutableSchema({
@@ -2027,6 +2006,10 @@ it('expects not to stack overflow on validation resolvers generation when input 
           gql`
             input TestInput {
               a: TestInput
+              b: TestInput!
+              c: [TestInput]
+              d: [TestInput]!
+              e: [TestInput!]!
             }
             type Mutation {
               mutationTest(input: TestInput!): String
@@ -2035,6 +2018,5 @@ it('expects not to stack overflow on validation resolvers generation when input 
         ],
       }),
     );
-  expect(generateSchemaWithRecuriseInputArray).not.toThrow();
   expect(generateSchemaWithRecursiveInput).not.toThrow();
 });

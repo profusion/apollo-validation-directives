@@ -200,17 +200,22 @@ const checkMustValidateInputField = (
   return checkMustValidateInput(field.type);
 };
 
+const getFinalType = (
+  inputField: GraphQLInputType,
+): GraphQLInputType & ValidatedContainerMustValidateInput => {
+  if (
+    inputField instanceof GraphQLList ||
+    inputField instanceof GraphQLNonNull
+  ) {
+    return getFinalType(inputField.ofType);
+  }
+  return inputField;
+};
+
 const checkMustValidateInput = (
   type: GraphQLInputType & ValidatedContainerMustValidateInput,
 ): boolean => {
-  let finalType = type;
-  if (finalType instanceof GraphQLNonNull) {
-    finalType = finalType.ofType;
-  }
-
-  if (finalType instanceof GraphQLList) {
-    return checkMustValidateInput(finalType.ofType);
-  }
+  const finalType = getFinalType(type);
 
   if (finalType.mustValidateInput !== undefined) {
     return finalType.mustValidateInput;
@@ -218,10 +223,7 @@ const checkMustValidateInput = (
 
   if (finalType instanceof GraphQLInputObjectType) {
     const fieldsToCheck = Object.values(finalType.getFields()).filter(field => {
-      if (field.type instanceof GraphQLList) {
-        return finalType !== field.type.ofType;
-      }
-      return field.type !== finalType;
+      return finalType !== getFinalType(field.type);
     });
 
     return fieldsToCheck.some(checkMustValidateInputField);
