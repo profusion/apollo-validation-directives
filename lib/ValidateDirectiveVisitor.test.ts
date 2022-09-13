@@ -1995,65 +1995,68 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       const mockResolver = jest.fn((_, { arg }): object => arg);
 
       const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
-      ValidateDirectiveVisitor.addValidationResolversToSchema(
-        makeExecutableSchema({
-          resolvers: {
-            Mutation: {
-              mutationTest: mockResolver,
+        ValidateDirectiveVisitor.addValidationResolversToSchema(
+          makeExecutableSchema({
+            resolvers: {
+              Mutation: {
+                mutationTest: mockResolver,
+              },
             },
-          },
-          schemaDirectives: {},
-          typeDefs: [
-            gqlSchema,
-          ],
-        }),
-      );
+            schemaDirectives: {},
+            typeDefs: [gqlSchema],
+          }),
+        );
       expect(generateSchemaWithRecursiveInput).not.toThrow();
     };
 
-    it('an array of nullable fields', () => recursiveInputTest(gql`
-      input TestInput {
-        a: [TestInput]
-      }
-      type Mutation {
-        mutationTest(input: TestInput!): String
-      }
-    `));
+    it('an array of nullable fields', () =>
+      recursiveInputTest(gql`
+        input TestInput {
+          a: [TestInput]
+        }
+        type Mutation {
+          mutationTest(input: TestInput!): String
+        }
+      `));
 
-    it('a nullable field', () => recursiveInputTest(gql`
-      input TestInput {
-        a: TestInput
-      }
-      type Mutation {
-        mutationTest(input: TestInput!): String
-      }
-    `));
+    it('a nullable field', () =>
+      recursiveInputTest(gql`
+        input TestInput {
+          a: TestInput
+        }
+        type Mutation {
+          mutationTest(input: TestInput!): String
+        }
+      `));
 
-    it('an array of non-nullable fields', () => recursiveInputTest(gql`
-      input TestInput {
-        a: [TestInput!]
-      }
-      type Mutation {
-        mutationTest(input: TestInput!): String
-      }
-    `));
+    it('an array of non-nullable fields', () =>
+      recursiveInputTest(gql`
+        input TestInput {
+          a: [TestInput!]
+        }
+        type Mutation {
+          mutationTest(input: TestInput!): String
+        }
+      `));
 
-    it('a non-nullable array of non-nullable fields', () => recursiveInputTest(gql`
-      input TestInput {
-        a: [TestInput!]!
-      }
-      type Mutation {
-        mutationTest(input: TestInput!): String
-      }
-    `));
+    it('a non-nullable array of non-nullable fields', () =>
+      recursiveInputTest(gql`
+        input TestInput {
+          a: [TestInput!]!
+        }
+        type Mutation {
+          mutationTest(input: TestInput!): String
+        }
+      `));
 
-    it('as a non-nullable field', () => recursiveInputTest(gql`
-      input TestInput {
-        a: TestInput!
-      }
-      type Mutation {
-        mutationTest(input: TestInput!): String
-      }
-    `));
+    it('as a non-nullable field', () =>
+      recursiveInputTest(gql`
+        input TestInput {
+          a: TestInput!
+        }
+        type Mutation {
+          mutationTest(input: TestInput!): String
+        }
+      `));
   });
 });
