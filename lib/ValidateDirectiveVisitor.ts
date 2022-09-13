@@ -227,6 +227,14 @@ const checkMustValidateInput = (
       }
 
       if (field.type instanceof GraphQLNonNull) {
+        if (field.type.ofType instanceof GraphQLList) {
+          if (field.type.ofType.ofType instanceof GraphQLNonNull) {
+            return finalType !== field.type.ofType.ofType.ofType;
+          }
+
+          return finalType !== field.type.ofType.ofType;
+        }
+
         return field.type.ofType !== finalType;
       }
 

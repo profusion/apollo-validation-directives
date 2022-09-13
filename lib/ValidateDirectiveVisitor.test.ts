@@ -2038,6 +2038,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       }
     `));
 
+    it('a non-nullable array of non-nullable fields', () => recursiveInputTest(gql`
+      input TestInput {
+        a: [TestInput!]!
+      }
+      type Mutation {
+        mutationTest(input: TestInput!): String
+      }
+    `));
+
     it('as a non-nullable field', () => recursiveInputTest(gql`
       input TestInput {
         a: TestInput!
