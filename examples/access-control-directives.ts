@@ -1,4 +1,5 @@
 import { ApolloServer } from 'apollo-server';
+import type { ExpressContext } from 'apollo-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
 import gql from 'graphql-tag';
 
@@ -69,7 +70,7 @@ type Context = ReturnType<typeof auth.createDirectiveContext> &
   ReturnType<typeof hasPermissions.createDirectiveContext>;
 
 const server = new ApolloServer({
-  context: (expressContext): Context => {
+  context: (expressContext: ExpressContext): Context => {
     // This example allows for state to be passed in the headers:
     //  - authorization: any value results in authenticated
     //  - permissions: json-serialized array of strings or null

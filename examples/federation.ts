@@ -3,10 +3,11 @@ import type {
   DocumentNode,
   GraphQLFieldResolver,
 } from 'graphql';
-import { ApolloServer, SchemaDirectiveVisitor, gql } from 'apollo-server';
+import { ApolloServer, gql } from 'apollo-server';
 import { ApolloGateway } from '@apollo/gateway';
 import { buildFederatedSchema } from '@apollo/federation';
 import type { GraphQLResolverMap } from 'apollo-graphql';
+import { SchemaDirectiveVisitor } from 'graphql-tools';
 
 import { ValidateDirectiveVisitor, range, stringLength } from '../lib';
 
