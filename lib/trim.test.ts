@@ -1,6 +1,6 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import trim, {
   createValidate as createTrimDirectiveValidate,

@@ -1,7 +1,7 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
-import { buildFederatedSchema } from '@apollo/federation';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { buildSubgraphSchema } from '@apollo/federation';
 
 import range from './range';
 import listLength from './listLength';
@@ -13,7 +13,7 @@ interface MyType {
 }
 
 const build = (isFederated: boolean): GraphQLSchema => {
-  const buildSchema = isFederated ? buildFederatedSchema : makeExecutableSchema;
+  const buildSchema = isFederated ? buildSubgraphSchema : makeExecutableSchema;
   return ValidateDirectiveVisitor.addValidationResolversToSchema(
     buildSchema({
       resolvers: {
@@ -40,7 +40,7 @@ const build = (isFederated: boolean): GraphQLSchema => {
 };
 
 describe('Multiple Directives', () => {
-  it('Should work with buildFederatedSchema', () => {
+  it('Should work with buildSubgraphSchema', () => {
     expect(() => build(true)).not.toThrow();
   });
   it('Should work with makeExecutableSchema', () => {

@@ -5,7 +5,7 @@ import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
-import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
 export type ToNodeId<IdType> = (
@@ -23,11 +23,11 @@ export type Args = {
 export default class ForeignNodeIdDirective<
   IdType,
   _ extends ForeignNodeIdContext<IdType>,
-> extends ValidateDirectiveVisitor<Args, ForeignNodeIdContext<IdType>> {
+> extends ValidateDirectiveVisitorNonTyped {
   public getValidationForArgs():
     | ValidateFunction<ForeignNodeIdContext<IdType>>
     | undefined {
-    const { typename } = this.args;
+    const { typename } = this.args as Args;
     const wrongUsageErrorMessage = `${this.name} directive only works on strings`;
     const wrongTypeNameErrorMessage = `Converted ID typename does not match. Expected: ${typename}`;
     const couldNotDecodeErrorMessage = `Could not decode ID to ${typename}`;
@@ -56,19 +56,20 @@ export default class ForeignNodeIdDirective<
     return validateArrayOrValue(itemValidate);
   }
 
-  public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
-    args: {
-      typename: {
-        description: 'The typename that this ID should match',
-        type: new GraphQLNonNull(GraphQLString),
+  public static readonly config: typeof ValidateDirectiveVisitorNonTyped['config'] =
+    {
+      args: {
+        typename: {
+          description: 'The typename that this ID should match',
+          type: new GraphQLNonNull(GraphQLString),
+        },
       },
-    },
-    description: 'Converts a global unique ID to a type ID',
-    locations: [
-      DirectiveLocation.ARGUMENT_DEFINITION,
-      DirectiveLocation.INPUT_FIELD_DEFINITION,
-    ],
-  };
+      description: 'Converts a global unique ID to a type ID',
+      locations: [
+        DirectiveLocation.ARGUMENT_DEFINITION,
+        DirectiveLocation.INPUT_FIELD_DEFINITION,
+      ],
+    };
 
   public static readonly defaultName: string = 'foreignNodeId';
 
@@ -78,3 +79,16 @@ export default class ForeignNodeIdDirective<
     return ctx;
   }
 }
+
+/*
+  graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,
+  you'll get this error: "Type 'typeof Your_Directive_Class' is not assignable to type 'typeof SchemaDirectiveVisitor'.".
+  If you are using the old graphql-tools, you can use:
+  extends EasyDirectiveVisitor<Record<string, never>, TContext>
+*/
+export const ForeignNodeIdDirectiveNonTyped: typeof ForeignNodeIdDirective<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+> = ForeignNodeIdDirective;

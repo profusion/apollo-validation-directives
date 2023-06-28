@@ -1,15 +1,15 @@
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 import { AuthenticationError } from 'apollo-server-errors';
 
-import AuthDirectiveVisitor from './auth';
+import { AuthDirectiveVisitorNonTyped } from './auth';
 
 describe('@auth()', (): void => {
   const name = 'auth';
-  const directiveTypeDefs = AuthDirectiveVisitor.getTypeDefs(name);
+  const directiveTypeDefs = AuthDirectiveVisitorNonTyped.getTypeDefs(name);
 
   it('exports correct typeDefs', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual([
@@ -22,14 +22,14 @@ directive @${name} on OBJECT | FIELD_DEFINITION
 
   it('defaultName is correct', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual(
-      AuthDirectiveVisitor.getTypeDefs().map(print),
+      AuthDirectiveVisitorNonTyped.getTypeDefs().map(print),
     );
   });
 
   describe('createDirectiveContext()', (): void => {
     it('supports function', (): void => {
       const isAuthenticated = (): boolean => true;
-      const ctx = AuthDirectiveVisitor.createDirectiveContext({
+      const ctx = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated,
       });
       expect(ctx.isAuthenticated).toBe(isAuthenticated);
@@ -37,7 +37,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
 
     it('supports constant', (): void => {
       const isAuthenticated = false;
-      const ctx = AuthDirectiveVisitor.createDirectiveContext({
+      const ctx = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated,
       });
       expect(ctx.isAuthenticated({}, {}, {}, {} as GraphQLResolveInfo)).toBe(
@@ -49,7 +49,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
   describe('works on object field', (): void => {
     const schema = makeExecutableSchema({
       schemaDirectives: {
-        auth: AuthDirectiveVisitor,
+        auth: AuthDirectiveVisitorNonTyped,
       },
       typeDefs: [
         ...directiveTypeDefs,
@@ -80,7 +80,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
     };
 
     it('if authenticated, returns all', async (): Promise<void> => {
-      const context = AuthDirectiveVisitor.createDirectiveContext({
+      const context = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated: true,
       });
       const result = await graphql(schema, source, rootValue, context);
@@ -90,7 +90,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
     });
 
     it('if NOT authenticated, returns partial', async (): Promise<void> => {
-      const context = AuthDirectiveVisitor.createDirectiveContext({
+      const context = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated: false,
       });
       const result = await graphql(schema, source, rootValue, context);
@@ -109,7 +109,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
   describe('works on whole object', (): void => {
     const schema = makeExecutableSchema({
       schemaDirectives: {
-        auth: AuthDirectiveVisitor,
+        auth: AuthDirectiveVisitorNonTyped,
       },
       typeDefs: [
         ...directiveTypeDefs,
@@ -140,7 +140,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
     };
 
     it('if authenticated, returns all', async (): Promise<void> => {
-      const context = AuthDirectiveVisitor.createDirectiveContext({
+      const context = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated: true,
       });
       const result = await graphql(schema, source, rootValue, context);
@@ -150,7 +150,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
     });
 
     it('if NOT authenticated, returns partial', async (): Promise<void> => {
-      const context = AuthDirectiveVisitor.createDirectiveContext({
+      const context = AuthDirectiveVisitorNonTyped.createDirectiveContext({
         isAuthenticated: false,
       });
       const result = await graphql(schema, source, rootValue, context);

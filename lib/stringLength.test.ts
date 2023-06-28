@@ -1,6 +1,6 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ValidationError } from 'apollo-server-errors';
 
 import stringLength from './stringLength';
@@ -23,7 +23,9 @@ const createSchema = ({
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
   stringLength.addValidationResolversToSchema(
     makeExecutableSchema({
-      schemaDirectives: { [name]: stringLength },
+      schemaDirectives: {
+        [name]: stringLength,
+      },
       typeDefs: [
         ...stringLength.getTypeDefs(name, undefined, true, true),
         gql`

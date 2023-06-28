@@ -5,9 +5,9 @@ import type {
 } from 'graphql';
 import { ApolloServer, gql } from 'apollo-server';
 import { ApolloGateway } from '@apollo/gateway';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import type { GraphQLResolverMap } from 'apollo-graphql';
-import { SchemaDirectiveVisitor } from 'graphql-tools';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 
 import { ValidateDirectiveVisitor, range, stringLength } from '../lib';
 
@@ -33,7 +33,7 @@ const buildSchema = (
       [],
     ),
   ];
-  const schema = buildFederatedSchema({ resolvers, typeDefs: finalTypeDefs });
+  const schema = buildSubgraphSchema({ resolvers, typeDefs: finalTypeDefs });
   SchemaDirectiveVisitor.visitSchemaDirectives(schema, directives);
   ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
   return schema;

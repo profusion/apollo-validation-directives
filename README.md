@@ -185,7 +185,7 @@ fields. These types are exposed by
 `ValidateDirectiveVisitor.getMissingCommonTypeDefs()`.
 
 ```typescript
-import { makeExecutableSchema } from 'apollo-server';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { range, ValidateDirectiveVisitor } from '@profusion/apollo-validation-directives';
 
 const schema = makeExecutableSchema({
@@ -471,7 +471,7 @@ could do the following:
 
 ```typescript
 import { GraphQLSchema, DocumentNode } from 'graphql';
-import { SchemaDirectiveVisitor } from 'apollo-server';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 import { buildFederatedSchema } from '@apollo/federation';
 import { GraphQLResolverMap } from 'apollo-graphql';
 import { ValidateDirectiveVisitor, range, stringLength } from '@profusion/apollo-validation-directives';
