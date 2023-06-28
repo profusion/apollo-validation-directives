@@ -69,8 +69,9 @@
     "graphql": "^14.7.0 || ^15.8.0"
   },
   "dependencies": {
+    "@graphql-tools/schema": "^7.1.5",
+    "@graphql-tools/utils": "^7.1.5",
     "graphql-tag": "^2.12.6",
-    "graphql-tools": "^4.0.8",
     "lodash.isequal": "^4.5.0"
   }
 }

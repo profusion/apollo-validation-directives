@@ -1,6 +1,6 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import cleanupPattern from './cleanupPattern';
 import capitalize from './capitalize';
@@ -25,7 +25,9 @@ const createSchema = ({
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
   cleanupPattern.addValidationResolversToSchema(
     makeExecutableSchema({
-      schemaDirectives: { [name]: cleanupPattern },
+      schemaDirectives: {
+        [name]: cleanupPattern,
+      },
       typeDefs: [
         ...cleanupPattern.getTypeDefs(name, undefined, true, true),
         gql`

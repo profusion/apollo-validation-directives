@@ -10,7 +10,7 @@ import {
   GraphQLBoolean,
 } from 'graphql';
 import { print } from 'graphql/language/printer';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
@@ -82,7 +82,10 @@ enum SomeEnum {
   ];
 
   describe('Directive Without Args', (): void => {
-    class DirectiveWithoutArgs extends EasyDirectiveVisitor<{}> {
+    class DirectiveWithoutArgs extends EasyDirectiveVisitor<
+      Record<string, never>,
+      Record<string, never>
+    > {
       public static readonly commonTypes = commonTypes;
 
       public static readonly config = { locations } as const;
@@ -252,7 +255,10 @@ enum SomeEnum {
   });
 
   describe('Directive With Args', (): void => {
-    class DirectiveWithArgs extends EasyDirectiveVisitor<{}> {
+    class DirectiveWithArgs extends EasyDirectiveVisitor<
+      Record<string, never>,
+      Record<string, never>
+    > {
       public static readonly commonTypes = commonTypes;
 
       public static readonly config = {

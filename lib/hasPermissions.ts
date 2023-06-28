@@ -121,8 +121,9 @@ export const getDefaultValue = (
 };
 
 export class HasPermissionsDirectiveVisitor<
+  TArgs extends HasPermissionsDirectiveArgs,
   TContext extends HasPermissionsContext,
-> extends ValidateDirectiveVisitor<HasPermissionsDirectiveArgs, TContext> {
+> extends ValidateDirectiveVisitor<TArgs, TContext> {
   public static readonly defaultName: string = 'hasPermissions';
 
   public static readonly defaultPolicy: ValidateDirectivePolicy =
@@ -296,3 +297,16 @@ export class HasPermissionsDirectiveVisitor<
 }
 
 export default HasPermissionsDirectiveVisitor;
+
+/*
+  graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,
+  you'll get this error: "Type 'typeof Your_Directive_Class' is not assignable to type 'typeof SchemaDirectiveVisitor'.".
+  If you are using the old graphql-tools, you can use:
+  extends EasyDirectiveVisitor<Record<string, never>, TContext>
+*/
+export const HasPermissionsDirectiveVisitorNonTyped: typeof HasPermissionsDirectiveVisitor<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+> = HasPermissionsDirectiveVisitor;

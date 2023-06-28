@@ -1,10 +1,10 @@
 import { ApolloServer } from 'apollo-server';
 import type { ExpressContext } from 'apollo-server-express';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 
 import type { MissingPermissionsResolverInfo } from '../lib';
-import { auth, hasPermissions } from '../lib';
+import { v3Auth, v3HasPermissions } from '../lib';
 
 const yourTypeDefs = [
   gql`
@@ -58,16 +58,19 @@ const schema = makeExecutableSchema({
       throwIfMissingPermissions: (): number => 123,
     },
   },
-  schemaDirectives: { auth, hasPermissions },
+  schemaDirectives: {
+    v3Auth,
+    v3HasPermissions,
+  },
   typeDefs: [
     ...yourTypeDefs,
-    ...auth.getTypeDefs(),
-    ...hasPermissions.getTypeDefs(),
+    ...v3Auth.getTypeDefs(),
+    ...v3HasPermissions.getTypeDefs(),
   ],
 });
 
-type Context = ReturnType<typeof auth.createDirectiveContext> &
-  ReturnType<typeof hasPermissions.createDirectiveContext>;
+type Context = ReturnType<typeof v3Auth.createDirectiveContext> &
+  ReturnType<typeof v3HasPermissions.createDirectiveContext>;
 
 const server = new ApolloServer({
   context: (expressContext: ExpressContext): Context => {
@@ -91,10 +94,10 @@ const server = new ApolloServer({
         : null;
     }
     return {
-      ...auth.createDirectiveContext({
+      ...v3Auth.createDirectiveContext({
         isAuthenticated: state.isAuthenticated,
       }),
-      ...hasPermissions.createDirectiveContext({
+      ...v3HasPermissions.createDirectiveContext({
         grantedPermissions: state.grantedPermissions || undefined,
       }),
     };

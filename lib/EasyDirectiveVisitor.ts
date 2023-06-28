@@ -18,7 +18,7 @@ import {
   printType,
 } from 'graphql';
 import gql from 'graphql-tag';
-import { SchemaDirectiveVisitor } from 'graphql-tools';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 
 export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<{
   [P in keyof Omit<GraphQLDirectiveConfig, 'name'>]: Readonly<
@@ -181,7 +181,8 @@ export const getDirectiveDeclaration = (
  */
 abstract class EasyDirectiveVisitor<
   TArgs extends object,
-> extends SchemaDirectiveVisitor {
+  TContext extends object,
+> extends SchemaDirectiveVisitor<TArgs, TContext> {
   args: TArgs;
 
   /**

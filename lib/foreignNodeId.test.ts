@@ -1,11 +1,11 @@
 import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 import { ValidationError } from 'apollo-server-errors';
 
 import type { ToNodeId } from './foreignNodeId';
-import ForeignNodeIdDirective from './foreignNodeId';
+import { ForeignNodeIdDirectiveNonTyped } from './foreignNodeId';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
@@ -24,7 +24,7 @@ describe('@foreignNodeId()', (): void => {
   };
   const name = 'foreignNodeId';
   const capitalizedName = capitalize(name);
-  const directiveTypeDefs = ForeignNodeIdDirective.getTypeDefs(name);
+  const directiveTypeDefs = ForeignNodeIdDirectiveNonTyped.getTypeDefs(name);
 
   it('exports correct typeDefs', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual([
@@ -44,12 +44,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
   it('defaultName is correct', (): void => {
     expect(directiveTypeDefs.map(print)).toEqual(
-      ForeignNodeIdDirective.getTypeDefs().map(print),
+      ForeignNodeIdDirectiveNonTyped.getTypeDefs().map(print),
     );
   });
 
   it('createDirectiveContext()', (): void => {
-    const ctx = ForeignNodeIdDirective.createDirectiveContext({
+    const ctx = ForeignNodeIdDirectiveNonTyped.createDirectiveContext({
       fromNodeId,
     });
     expect(ctx.fromNodeId).toBe(fromNodeId);
@@ -57,21 +57,22 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
   it('should not work if fromNodeId returns null', async (): Promise<void> => {
     const typename = 'X';
-    const schema = ForeignNodeIdDirective.addValidationResolversToSchema(
-      makeExecutableSchema({
-        schemaDirectives: {
-          foreignNodeId: ForeignNodeIdDirective,
-        },
-        typeDefs: [
-          ...directiveTypeDefs,
-          gql`
+    const schema =
+      ForeignNodeIdDirectiveNonTyped.addValidationResolversToSchema(
+        makeExecutableSchema({
+          schemaDirectives: {
+            foreignNodeId: ForeignNodeIdDirectiveNonTyped,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
             type Query {
               work(arg: ID! @foreignNodeId(typename: "${typename}")): Boolean
             }
           `,
-        ],
-      }),
-    );
+          ],
+        }),
+      );
     const source = print(gql`
       query MyQuery($arg: ID!) {
         work(arg: $arg)
@@ -80,7 +81,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const variables = {
       arg: '1',
     };
-    const context = ForeignNodeIdDirective.createDirectiveContext({
+    const context = ForeignNodeIdDirectiveNonTyped.createDirectiveContext({
       fromNodeId: () => null,
     });
     const result = await graphql(schema, source, null, context, variables);
@@ -91,24 +92,25 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
   });
 
   it('should not work on non string types', async (): Promise<void> => {
-    const schema = ForeignNodeIdDirective.addValidationResolversToSchema(
-      makeExecutableSchema({
-        schemaDirectives: {
-          foreignNodeId: ForeignNodeIdDirective,
-        },
-        typeDefs: [
-          ...directiveTypeDefs,
-          gql`
-            input Input1 {
-              typeId: Int! @foreignNodeId(typename: "A")
-            }
-            type Query {
-              work(input: Input1!): Boolean
-            }
-          `,
-        ],
-      }),
-    );
+    const schema =
+      ForeignNodeIdDirectiveNonTyped.addValidationResolversToSchema(
+        makeExecutableSchema({
+          schemaDirectives: {
+            foreignNodeId: ForeignNodeIdDirectiveNonTyped,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
+              input Input1 {
+                typeId: Int! @foreignNodeId(typename: "A")
+              }
+              type Query {
+                work(input: Input1!): Boolean
+              }
+            `,
+          ],
+        }),
+      );
     const source = print(gql`
       query MyQuery($input: Input1!) {
         work(input: $input)
@@ -119,7 +121,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         typeId: 1,
       },
     };
-    const context = ForeignNodeIdDirective.createDirectiveContext({
+    const context = ForeignNodeIdDirectiveNonTyped.createDirectiveContext({
       fromNodeId,
     });
     const result = await graphql(schema, source, null, context, variables);
@@ -134,21 +136,22 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
   it('typename does not match', async (): Promise<void> => {
     const wrongName = 'wrong';
     const typename = 'typename';
-    const schema = ForeignNodeIdDirective.addValidationResolversToSchema(
-      makeExecutableSchema({
-        schemaDirectives: {
-          foreignNodeId: ForeignNodeIdDirective,
-        },
-        typeDefs: [
-          ...directiveTypeDefs,
-          gql`
+    const schema =
+      ForeignNodeIdDirectiveNonTyped.addValidationResolversToSchema(
+        makeExecutableSchema({
+          schemaDirectives: {
+            foreignNodeId: ForeignNodeIdDirectiveNonTyped,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
             type Query {
               work(arg: ID! @foreignNodeId(typename: "${typename}")): Boolean
             }
           `,
-        ],
-      }),
-    );
+          ],
+        }),
+      );
     const source = print(gql`
       query MyQuery($arg: ID!) {
         work(arg: $arg)
@@ -157,7 +160,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const variables = {
       arg: toNodeId(wrongName, '1'),
     };
-    const context = ForeignNodeIdDirective.createDirectiveContext({
+    const context = ForeignNodeIdDirectiveNonTyped.createDirectiveContext({
       fromNodeId,
     });
     const result = await graphql(schema, source, null, context, variables);
@@ -179,26 +182,27 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       { id: 'id4', typeName: 'Type4' },
       { id: 'aaaaa', typeName: 'Type5' },
     ];
-    const schema = ForeignNodeIdDirective.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Query: {
-            work: (_, { arg, input }) => [
-              arg,
-              input.typeId,
-              input.typeId2,
-              input.typeId3,
-              input.typeId4,
-              input.typeId5,
-            ],
+    const schema =
+      ForeignNodeIdDirectiveNonTyped.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              work: (_, { arg, input }) => [
+                arg,
+                input.typeId,
+                input.typeId2,
+                input.typeId3,
+                input.typeId4,
+                input.typeId5,
+              ],
+            },
           },
-        },
-        schemaDirectives: {
-          foreignNodeId: ForeignNodeIdDirective,
-        },
-        typeDefs: [
-          ...directiveTypeDefs,
-          gql`
+          schemaDirectives: {
+            foreignNodeId: ForeignNodeIdDirectiveNonTyped,
+          },
+          typeDefs: [
+            ...directiveTypeDefs,
+            gql`
             input Input1 {
               typeId: ID! @foreignNodeId(typename: "${idsMap[1].typeName}")
               typeId2: ID! @foreignNodeId(typename: "${idsMap[2].typeName}")
@@ -213,9 +217,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               ): [String]!
             }
           `,
-        ],
-      }),
-    );
+          ],
+        }),
+      );
     const source = print(gql`
       query MyQuery($input: Input1!, $arg: ID!) {
         work(input: $input, arg: $arg)
@@ -240,7 +244,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       work: workResult,
     };
 
-    const context = ForeignNodeIdDirective.createDirectiveContext({
+    const context = ForeignNodeIdDirectiveNonTyped.createDirectiveContext({
       fromNodeId,
     });
     const result = await graphql(schema, source, rootValue, context, variables);

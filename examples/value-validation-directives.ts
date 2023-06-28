@@ -1,5 +1,5 @@
 import { ApolloServer } from 'apollo-server';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 import type { ValidationError } from 'apollo-server-errors';
 
@@ -82,6 +82,14 @@ const argsResolver = (
   { validationErrors }: ValidationErrorsResolverInfo,
 ): object => ({ arg, validationErrors });
 
+const schemaDirectives = {
+  listLength,
+  pattern,
+  range,
+  stringLength,
+  trim,
+};
+
 const schema = makeExecutableSchema({
   resolvers: {
     Query: {
@@ -94,7 +102,7 @@ const schema = makeExecutableSchema({
       trimExample: argsResolver,
     },
   },
-  schemaDirectives: { listLength, pattern, range, stringLength, trim },
+  schemaDirectives,
   typeDefs: [
     ...yourTypeDefs,
     ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),

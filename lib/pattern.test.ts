@@ -1,7 +1,9 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ValidationError } from 'apollo-server-errors';
+
+import type { IResolvers } from '@graphql-tools/utils';
 
 import pattern from './pattern';
 import capitalize from './capitalize';
@@ -31,9 +33,10 @@ const createSchema = ({
   pattern.addValidationResolversToSchema(
     makeExecutableSchema({
       resolvers: {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         SomeObj: {
           toString: (obj: object): string => obj.toString(),
-        },
+        } as IResolvers,
       },
       schemaDirectives: { [name]: pattern },
       typeDefs: [

@@ -786,8 +786,8 @@ const collectInputObjectsAndFieldsWithArguments = (
  */
 abstract class ValidateDirectiveVisitor<
   TArgs extends ValidationDirectiveArgs,
-  TContext = object,
-> extends EasyDirectiveVisitor<TArgs> {
+  TContext extends object = object,
+> extends EasyDirectiveVisitor<TArgs, TContext> {
   public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] =
     [validatedInputErrorListType, validatedErrorOutputType] as const;
 
@@ -1033,3 +1033,15 @@ abstract class ValidateDirectiveVisitor<
 }
 
 export default ValidateDirectiveVisitor;
+/*
+  graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,
+  you'll get this error: "Type 'typeof Your_Directive_Class' is not assignable to type 'typeof SchemaDirectiveVisitor'.".
+  If you are using the old graphql-tools, you can use:
+  extends EasyDirectiveVisitor<Record<string, never>, TContext>
+*/
+export const ValidateDirectiveVisitorNonTyped: typeof ValidateDirectiveVisitor<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+> = ValidateDirectiveVisitor;

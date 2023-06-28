@@ -1,5 +1,5 @@
 import { graphql, GraphQLBoolean, GraphQLObjectType } from 'graphql';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
@@ -23,7 +23,9 @@ describe('createValidateDirectiveVisitor', (): void => {
       defaultName,
     });
     const schema = makeExecutableSchema({
-      schemaDirectives: { [defaultName]: directive },
+      schemaDirectives: {
+        [defaultName]: directive,
+      },
       typeDefs: [
         ...directive.getTypeDefs(),
         gql`
@@ -74,7 +76,9 @@ describe('createValidateDirectiveVisitor', (): void => {
       isValidateArrayOrValue: false,
     });
     const schema = makeExecutableSchema({
-      schemaDirectives: { [defaultName]: directive },
+      schemaDirectives: {
+        [defaultName]: directive,
+      },
       typeDefs: [
         ...directive.getTypeDefs(),
         gql`

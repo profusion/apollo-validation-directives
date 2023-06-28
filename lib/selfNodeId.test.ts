@@ -1,7 +1,7 @@
 import { graphql } from 'graphql';
 import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ValidationError } from 'apollo-server-errors';
 
 import {

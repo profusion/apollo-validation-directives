@@ -2,16 +2,24 @@ import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
-import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
 
 export type CreateValidate<TArgs extends object> = (
   args: TArgs,
 ) => ValidateFunction | undefined;
 
-export class ConcreteValidateDirectiveVisitor<
-  TArgs extends ValidationDirectiveArgs,
-> extends ValidateDirectiveVisitor<TArgs> {
+/*
+  graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,
+  you'll get this error: "Type 'typeof Your_Directive_Class' is not assignable to type 'typeof SchemaDirectiveVisitor'.".
+  If you are using the old graphql-tools, you can use:
+
+  export class ConcreteValidateDirectiveVisitor<
+    TArgs extends ValidationDirectiveArgs,
+    TContext extends object,
+  > extends ValidateDirectiveVisitor<TArgs, TContext> {
+*/
+export class ConcreteValidateDirectiveVisitor extends ValidateDirectiveVisitorNonTyped {
   // istanbul ignore next (this shouldn't be used)
   // eslint-disable-next-line class-methods-use-this
   public getValidationForArgs(): ValidateFunction | undefined {
@@ -30,21 +38,21 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
 }: {
   createValidate: CreateValidate<TArgs>;
   defaultName: string;
-  directiveConfig?: Partial<typeof ValidateDirectiveVisitor['config']>;
-  extraCommonTypes?: typeof ValidateDirectiveVisitor['commonTypes'];
+  directiveConfig?: Partial<typeof ValidateDirectiveVisitorNonTyped['config']>;
+  extraCommonTypes?: typeof ValidateDirectiveVisitorNonTyped['commonTypes'];
   isValidateArrayOrValue?: boolean; // if true uses validateArrayOrValue()
 }): typeof ConcreteValidateDirectiveVisitor => {
-  class CreateValidateDirectiveVisitor extends ConcreteValidateDirectiveVisitor<TArgs> {
+  class CreateValidateDirectiveVisitor extends ConcreteValidateDirectiveVisitor {
     public static readonly commonTypes = extraCommonTypes
-      ? ValidateDirectiveVisitor.commonTypes.concat(extraCommonTypes)
-      : ValidateDirectiveVisitor.commonTypes;
+      ? ValidateDirectiveVisitorNonTyped.commonTypes.concat(extraCommonTypes)
+      : ValidateDirectiveVisitorNonTyped.commonTypes;
 
     public static readonly config = directiveConfig
       ? ({
-          ...ValidateDirectiveVisitor.config,
+          ...ValidateDirectiveVisitorNonTyped.config,
           ...directiveConfig,
         } as const)
-      : ValidateDirectiveVisitor.config;
+      : ValidateDirectiveVisitorNonTyped.config;
 
     public static readonly defaultName = defaultName;
 
@@ -56,7 +64,7 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
       ) {
         Object.defineProperty(validate, 'validateProperties', {
           value: {
-            args: this.args,
+            args: this.args as ValidationDirectiveArgs,
             directive: defaultName,
           },
           writable: false,

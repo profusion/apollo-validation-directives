@@ -20,7 +20,8 @@ export type AuthContext<TContext extends object = object> = {
 
 export class AuthDirectiveVisitor<
   TContext extends AuthContext,
-> extends EasyDirectiveVisitor<{}> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+> extends EasyDirectiveVisitor<any, TContext> {
   public errorMessage = 'Unauthenticated';
 
   public static readonly config: typeof EasyDirectiveVisitor['config'] = {
@@ -66,3 +67,13 @@ export class AuthDirectiveVisitor<
 }
 
 export default AuthDirectiveVisitor;
+
+/*
+  graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,
+  you'll get this error: "Type 'typeof Your_Directive_Class' is not assignable to type 'typeof SchemaDirectiveVisitor'.".
+  If you are using the old graphql-tools, you can use:
+  extends EasyDirectiveVisitor<Record<string, never>, TContext>
+*/
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const AuthDirectiveVisitorNonTyped: typeof AuthDirectiveVisitor<any> =
+  AuthDirectiveVisitor;

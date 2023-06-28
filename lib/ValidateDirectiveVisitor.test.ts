@@ -16,14 +16,14 @@ import {
 } from 'graphql';
 import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ValidationError } from 'apollo-server-errors';
 
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
-import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
@@ -36,7 +36,7 @@ interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
 }
 
 const defaultLocationsStr =
-  ValidateDirectiveVisitor.config.locations.join(' | ');
+  ValidateDirectiveVisitorNonTyped.config.locations.join(' | ');
 
 const getFieldArg = (
   type: GraphQLObjectType,
@@ -45,7 +45,7 @@ const getFieldArg = (
 ): GraphQLArgument | undefined =>
   type.getFields()[fieldName].args.find(({ name }) => name === argName);
 
-describe('ValidateDirectiveVisitor', (): void => {
+describe('ValidateDirectiveVisitorNonTyped', (): void => {
   const minimalTypeDef = gql`
     type T {
       i: Int
@@ -83,7 +83,7 @@ type ValidatedInputErrorOutput {
 
   it('commonTypeDefs is correct without schema', (): void => {
     expect(
-      ValidateDirectiveVisitor.getMissingCommonTypeDefs().map(print),
+      ValidateDirectiveVisitorNonTyped.getMissingCommonTypeDefs().map(print),
     ).toEqual(commonTypeDefs);
   });
 
@@ -100,7 +100,7 @@ type ValidatedInputErrorOutput {
   const name = 'testDirective';
   const capitalizedName = capitalize(name);
   const basicTypeDefs = [
-    ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(
+    ...ValidateDirectiveVisitorNonTyped.getMissingCommonTypeDefs(
       makeExecutableSchema({ typeDefs: minimalTypeDef }),
     ),
     gql`
@@ -119,7 +119,7 @@ type ValidatedInputErrorOutput {
   type TestDirectiveArgs = { validate: boolean } & ValidationDirectiveArgs;
 
   describe('Throw policy', (): void => {
-    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+    class TestDirective extends ValidateDirectiveVisitorNonTyped {
       // eslint-disable-next-line class-methods-use-this
       public getValidationForArgs(): ValidateFunction {
         const validate = (): void => {
@@ -127,7 +127,7 @@ type ValidatedInputErrorOutput {
         };
         Object.defineProperty(validate, 'validateProperties', {
           value: {
-            args: this.args,
+            args: this.args as TestDirectiveArgs,
             directive: 'testThrowPolicyValidate',
           },
           writable: false,
@@ -135,36 +135,37 @@ type ValidatedInputErrorOutput {
         return validate;
       }
     }
-    const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Query: {
-            argShouldFail: (): boolean => true,
-            failInput: (): boolean => true,
-            failInputField: (): boolean => true,
+    const schema =
+      ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              argShouldFail: (): boolean => true,
+              failInput: (): boolean => true,
+              failInputField: (): boolean => true,
+            },
           },
-        },
-        schemaDirectives: {
-          testDirective: TestDirective,
-        },
-        typeDefs: [
-          ...basicTypeDefs,
-          gql`
-            input FailInput @testDirective(policy: THROW) {
-              n: Int
-            }
-            input FailInputField {
-              n: Int @testDirective(policy: THROW)
-            }
-            type Query {
-              argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
-              failInput(input: FailInput): Boolean!
-              failInputField(input: FailInputField): Boolean!
-            }
-          `,
-        ],
-      }),
-    );
+          schemaDirectives: {
+            testDirective: TestDirective,
+          },
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
+              input FailInput @testDirective(policy: THROW) {
+                n: Int
+              }
+              input FailInputField {
+                n: Int @testDirective(policy: THROW)
+              }
+              type Query {
+                argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
+                failInput(input: FailInput): Boolean!
+                failInputField(input: FailInputField): Boolean!
+              }
+            `,
+          ],
+        }),
+      );
 
     it('should fail on args', async (): Promise<void> => {
       const source = print(gql`
@@ -266,9 +267,10 @@ type ValidatedInputErrorOutput {
   describe('basic behavior works', (): void => {
     const mockValidate = jest.fn(x => x);
     const mockResolver = jest.fn((_, { arg }): object => arg);
-    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    class TestDirective extends ValidateDirectiveVisitorNonTyped {
       public static readonly config = {
-        ...ValidateDirectiveVisitor.config,
+        ...ValidateDirectiveVisitorNonTyped.config,
         args: {
           validate: {
             defaultValue: true,
@@ -279,7 +281,9 @@ type ValidatedInputErrorOutput {
       };
 
       public getValidationForArgs(): ValidateFunction | undefined {
-        return this.args.validate ? mockValidate : undefined;
+        return (this.args as TestDirectiveArgs).validate
+          ? mockValidate
+          : undefined;
       }
     }
 
@@ -300,7 +304,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     describe('field directives', (): void => {
-      // these are handled directly by the ValidateDirectiveVisitor and
+      // these are handled directly by the ValidateDirectiveVisitorNonTyped and
       // do NOT need addValidationResolversToSchema()!
 
       // these are simpler to validate since the GraphQL framework will handle
@@ -494,7 +498,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     describe('output object directives wraps fields', (): void => {
-      // these are handled directly by the ValidateDirectiveVisitor and
+      // these are handled directly by the ValidateDirectiveVisitorNonTyped and
       // do NOT need addValidationResolversToSchema()!
 
       // these are simpler to validate since the GraphQL framework will handle
@@ -578,7 +582,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     describe('argument directives', (): void => {
-      // these are handled directly by the ValidateDirectiveVisitor and
+      // these are handled directly by the ValidateDirectiveVisitorNonTyped and
       // do NOT need addValidationResolversToSchema()!
 
       // these are trickier to test since there is nothing doing the
@@ -1539,9 +1543,10 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
   describe('Call validation before call output field resolve', (): void => {
     const mockValidate = jest.fn(x => x);
-    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    class TestDirective extends ValidateDirectiveVisitorNonTyped {
       public static readonly config = {
-        ...ValidateDirectiveVisitor.config,
+        ...ValidateDirectiveVisitorNonTyped.config,
         args: {
           validate: {
             defaultValue: true,
@@ -1555,11 +1560,13 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         false;
 
       public getValidationForArgs(): ValidateFunction | undefined {
-        return this.args.validate ? mockValidate : undefined;
+        return (this.args as TestDirectiveArgs).validate
+          ? mockValidate
+          : undefined;
       }
     }
 
-    // these are handled directly by the ValidateDirectiveVisitor and
+    // these are handled directly by the ValidateDirectiveVisitorNonTyped and
     // do NOT need addValidationResolversToSchema()!
 
     // these are simpler to validate since the GraphQL framework will handle
@@ -1669,11 +1676,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       }),
     );
 
-    class TestDirective extends ValidateDirectiveVisitor<TestDirectiveArgs> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    class TestDirective extends ValidateDirectiveVisitorNonTyped {
       public static readonly config = {
-        ...ValidateDirectiveVisitor.config,
+        ...ValidateDirectiveVisitorNonTyped.config,
         args: {
-          ...ValidateDirectiveVisitor.config.args,
+          ...ValidateDirectiveVisitorNonTyped.config.args,
           validate: {
             defaultValue: true,
             description: 'if true does validation',
@@ -1683,7 +1691,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       };
 
       public getValidationForArgs(): ValidateFunction | undefined {
-        return this.args.validate ? mockValidate : undefined;
+        return (this.args as TestDirectiveArgs).validate
+          ? mockValidate
+          : undefined;
       }
     }
 
@@ -1694,23 +1704,24 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
     const value = 1234;
 
-    // these are NOT handled directly by the ValidateDirectiveVisitor and
+    // these are NOT handled directly by the ValidateDirectiveVisitorNonTyped and
     // do MUST USE addValidationResolversToSchema()!
 
     it('works with deepNonNullable', async (): Promise<void> => {
-      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
-        makeExecutableSchema({
-          resolvers: {
-            Query: {
-              deepNonNullable: mockResolver,
+      const schema =
+        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
+          makeExecutableSchema({
+            resolvers: {
+              Query: {
+                deepNonNullable: mockResolver,
+              },
             },
-          },
-          schemaDirectives: {
-            [name]: TestDirective,
-          },
-          typeDefs: [
-            ...basicTypeDefs,
-            gql`
+            schemaDirectives: {
+              [name]: TestDirective,
+            },
+            typeDefs: [
+              ...basicTypeDefs,
+              gql`
               type DeepNonNullableEntry {
                 nonNullable: Int # match the input name, but is nullable to make tests easier
                 notValidated: Int
@@ -1729,9 +1740,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): DeepNonNullableResult
               }
             `,
-          ],
-        }),
-      );
+            ],
+          }),
+        );
 
       const source = print(gql`
         query {
@@ -1773,19 +1784,20 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     it('works with deepNullable', async (): Promise<void> => {
-      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
-        makeExecutableSchema({
-          resolvers: {
-            Query: {
-              deepNullable: mockResolver,
+      const schema =
+        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
+          makeExecutableSchema({
+            resolvers: {
+              Query: {
+                deepNullable: mockResolver,
+              },
             },
-          },
-          schemaDirectives: {
-            [name]: TestDirective,
-          },
-          typeDefs: [
-            ...basicTypeDefs,
-            gql`
+            schemaDirectives: {
+              [name]: TestDirective,
+            },
+            typeDefs: [
+              ...basicTypeDefs,
+              gql`
               type DeepNullableEntry {
                 nullable: Int
               }
@@ -1823,9 +1835,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): DeepNullableResult
               }
             `,
-          ],
-        }),
-      );
+            ],
+          }),
+        );
       const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const source = print(gql`
@@ -1885,20 +1897,21 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     it('works with double validation', async (): Promise<void> => {
-      const schema = ValidateDirectiveVisitor.addValidationResolversToSchema(
-        makeExecutableSchema({
-          resolvers: {
-            Query: {
-              test: mockResolver,
+      const schema =
+        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
+          makeExecutableSchema({
+            resolvers: {
+              Query: {
+                test: mockResolver,
+              },
             },
-          },
-          schemaDirectives: {
-            anotherDirective: TestDirective,
-            [name]: TestDirective,
-          },
-          typeDefs: [
-            ...basicTypeDefs,
-            gql`
+            schemaDirectives: {
+              anotherDirective: TestDirective,
+              [name]: TestDirective,
+            },
+            typeDefs: [
+              ...basicTypeDefs,
+              gql`
               type TestOutput {
                 value: Int
               }
@@ -1917,9 +1930,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): Test
               }
             `,
-          ],
-        }),
-      );
+            ],
+          }),
+        );
       const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const source = print(gql`
@@ -1994,7 +2007,7 @@ it('expects not to stack overflow on validation resolvers generation when input 
   const mockResolver = jest.fn((_, { arg }): object => arg);
 
   const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
-    ValidateDirectiveVisitor.addValidationResolversToSchema(
+    ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
       makeExecutableSchema({
         resolvers: {
           Mutation: {
