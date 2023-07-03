@@ -103,9 +103,7 @@ const start = async (): Promise<void> => {
     ],
   });
   const server = new ApolloServer({
-    engine: false,
     gateway: apolloGateway,
-    subscriptions: false,
   });
 
   const { url } = await server.listen();
