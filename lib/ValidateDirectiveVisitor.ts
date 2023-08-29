@@ -756,10 +756,10 @@ abstract class ValidateDirectiveVisitor<
   TArgs extends ValidationDirectiveArgs,
   TContext extends object = object,
 > extends EasyDirectiveVisitor<TArgs, TContext> {
-  public static readonly commonTypes: typeof EasyDirectiveVisitor['commonTypes'] =
+  public static readonly commonTypes: (typeof EasyDirectiveVisitor)['commonTypes'] =
     [validatedInputErrorListType, validatedErrorOutputType] as const;
 
-  public static readonly config: typeof EasyDirectiveVisitor['config'] = {
+  public static readonly config: (typeof EasyDirectiveVisitor)['config'] = {
     locations: [
       DirectiveLocation.ARGUMENT_DEFINITION,
       DirectiveLocation.FIELD_DEFINITION,

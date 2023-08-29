@@ -57,7 +57,7 @@ export default class ForeignNodeIdDirective<
     return validateArrayOrValue(itemValidate);
   }
 
-  public static readonly config: typeof ValidateDirectiveVisitorNonTyped['config'] =
+  public static readonly config: (typeof ValidateDirectiveVisitorNonTyped)['config'] =
     {
       args: {
         typename: {

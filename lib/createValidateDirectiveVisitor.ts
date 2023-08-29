@@ -38,8 +38,10 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
 }: {
   createValidate: CreateValidate<TArgs>;
   defaultName: string;
-  directiveConfig?: Partial<typeof ValidateDirectiveVisitorNonTyped['config']>;
-  extraCommonTypes?: typeof ValidateDirectiveVisitorNonTyped['commonTypes'];
+  directiveConfig?: Partial<
+    (typeof ValidateDirectiveVisitorNonTyped)['config']
+  >;
+  extraCommonTypes?: (typeof ValidateDirectiveVisitorNonTyped)['commonTypes'];
   isValidateArrayOrValue?: boolean; // if true uses validateArrayOrValue()
 }): typeof ConcreteValidateDirectiveVisitor => {
   class CreateValidateDirectiveVisitor extends ConcreteValidateDirectiveVisitor {

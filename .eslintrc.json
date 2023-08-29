@@ -107,7 +107,8 @@
         "strict": [
             0,
             "global"
-        ]
+        ],
+        "@typescript-eslint/no-explicit-any": "warn"
     },
     "overrides": [
         {

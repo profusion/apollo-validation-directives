@@ -27,7 +27,7 @@ class AuthDirectiveVisitor<
 > extends EasyDirectiveVisitor<any, TContext> {
   public errorMessage = 'Unauthenticated';
 
-  public static readonly config: typeof EasyDirectiveVisitor['config'] = {
+  public static readonly config: (typeof EasyDirectiveVisitor)['config'] = {
     description: 'ensures is authenticated before calling the resolver',
     locations: [DirectiveLocation.OBJECT, DirectiveLocation.FIELD_DEFINITION],
   };

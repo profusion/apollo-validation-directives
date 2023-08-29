@@ -131,7 +131,7 @@ export class HasPermissionsDirectiveVisitor<
   public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
     false;
 
-  public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
+  public static readonly config: (typeof ValidateDirectiveVisitor)['config'] = {
     args: {
       permissions: {
         description:

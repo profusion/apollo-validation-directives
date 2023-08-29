@@ -48,7 +48,7 @@ export default class SelfNodeIdDirective<
     };
   }
 
-  public static readonly config: typeof ValidateDirectiveVisitor['config'] = {
+  public static readonly config: (typeof ValidateDirectiveVisitor)['config'] = {
     description: 'ensures that the ID is converted to a global ID',
     locations: [DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.OBJECT],
   };
