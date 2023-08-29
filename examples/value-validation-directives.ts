@@ -1,7 +1,7 @@
-import { ApolloServer } from 'apollo-server';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
-import type { ValidationError } from 'apollo-server-errors';
 
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql, print } from 'graphql';
@@ -13,7 +13,9 @@ import {
   stringLength,
   ValidateDirectiveVisitor,
   trim,
+  applyDirectivesToSchema,
 } from '../lib';
+import type ValidationError from '../lib/errors/ValidationError';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];
@@ -82,40 +84,33 @@ const argsResolver = (
   { validationErrors }: ValidationErrorsResolverInfo,
 ): object => ({ arg, validationErrors });
 
-const schemaDirectives = {
-  listLength,
-  pattern,
-  range,
-  stringLength,
-  trim,
-};
+const directives = [listLength, pattern, range, stringLength, trim];
 
-const schema = makeExecutableSchema({
-  resolvers: {
-    Query: {
-      floatRangeExample: argsResolver,
-      intRangeExample: argsResolver,
-      listLengthExample: argsResolver,
-      patternExample: argsResolver,
-      stringLengthExample: argsResolver,
-      throwingIntRangeExample: argsResolver,
-      trimExample: argsResolver,
+const schema = applyDirectivesToSchema(
+  directives,
+  makeExecutableSchema({
+    resolvers: {
+      Query: {
+        floatRangeExample: argsResolver,
+        intRangeExample: argsResolver,
+        listLengthExample: argsResolver,
+        patternExample: argsResolver,
+        stringLengthExample: argsResolver,
+        throwingIntRangeExample: argsResolver,
+        trimExample: argsResolver,
+      },
     },
-  },
-  schemaDirectives,
-  typeDefs: [
-    ...yourTypeDefs,
-    ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
-    ...listLength.getTypeDefs(),
-    ...pattern.getTypeDefs(),
-    ...range.getTypeDefs(),
-    ...stringLength.getTypeDefs(),
-    ...trim.getTypeDefs(),
-  ],
-});
-
-// needed to validate input fields!
-ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
+    typeDefs: [
+      ...yourTypeDefs,
+      ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
+      ...listLength.getTypeDefs(),
+      ...pattern.getTypeDefs(),
+      ...range.getTypeDefs(),
+      ...stringLength.getTypeDefs(),
+      ...trim.getTypeDefs(),
+    ],
+  }),
+);
 
 // works as test and sample queries
 const tests = {
@@ -333,7 +328,7 @@ const test = async (): Promise<void[]> =>
     Object.entries(tests).map(
       async ([name, { query, result: expected }]): Promise<void> => {
         const source = print(query);
-        const result = await graphql(schema, source);
+        const result = await graphql({ schema, source });
         if (JSON.stringify(result) !== JSON.stringify(expected)) {
           throw Error(`test ${name} failed`);
         }
@@ -350,7 +345,7 @@ test().catch(error => {
 });
 
 const server = new ApolloServer({ schema });
-server.listen().then(({ url }) => {
+startStandaloneServer(server).then(({ url }) => {
   // eslint-disable-next-line no-console
   console.log(`🚀 Server ready at ${url}`);
 });

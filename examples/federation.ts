@@ -3,43 +3,53 @@ import type {
   DocumentNode,
   GraphQLFieldResolver,
 } from 'graphql';
-import { ApolloServer, gql } from 'apollo-server';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
 import { ApolloGateway } from '@apollo/gateway';
-import { buildSubgraphSchema } from '@apollo/federation';
-import type { GraphQLResolverMap } from 'apollo-graphql';
-import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
+import { buildSubgraphSchema } from '@apollo/subgraph';
+import gql from 'graphql-tag';
+import type { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper';
 
-import { ValidateDirectiveVisitor, range, stringLength } from '../lib';
+import {
+  ValidateDirectiveVisitor,
+  range,
+  stringLength,
+  applyDirectivesToSchema,
+} from '../lib';
 
 /*
   When using apollo federation all
   directives should be available to all
   federated nodes.
 */
-const directives = {
-  range,
-  stringLength,
-};
+
+type Directive = typeof range;
 
 const buildSchema = (
   resolvers: GraphQLResolverMap<{}>,
   typeDefs: DocumentNode,
+  directives: Directive[],
 ): GraphQLSchema => {
   const finalTypeDefs = [
     typeDefs,
     ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
-    ...Object.values(directives).reduce<DocumentNode[]>(
+    ...directives.reduce<DocumentNode[]>(
       (acc, d) => acc.concat(d.getTypeDefs()),
       [],
     ),
   ];
-  const schema = buildSubgraphSchema({ resolvers, typeDefs: finalTypeDefs });
-  SchemaDirectiveVisitor.visitSchemaDirectives(schema, directives);
-  ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
+  const schema = applyDirectivesToSchema(
+    directives,
+    buildSubgraphSchema({
+      resolvers: resolvers as GraphQLResolverMap<unknown>,
+      typeDefs: finalTypeDefs,
+    }),
+  );
   return schema;
 };
 
 interface ServicesSetup {
+  directives: Directive[];
   port: number;
   resolvers: {
     [typeName: string]: {
@@ -51,6 +61,7 @@ interface ServicesSetup {
 
 const services: ServicesSetup[] = [
   {
+    directives: [range],
     port: 4001,
     resolvers: {
       Query: {
@@ -65,6 +76,7 @@ const services: ServicesSetup[] = [
     `,
   },
   {
+    directives: [stringLength],
     port: 4002,
     resolvers: {
       Query: {
@@ -82,10 +94,13 @@ const services: ServicesSetup[] = [
 
 const start = async (): Promise<void> => {
   const runningString = await Promise.all(
-    services.map(({ resolvers, typeDefs, port }) =>
-      new ApolloServer({
-        schema: buildSchema(resolvers, typeDefs),
-      }).listen({ port }),
+    services.map(({ resolvers, typeDefs, port, directives }) =>
+      startStandaloneServer(
+        new ApolloServer({
+          schema: buildSchema(resolvers, typeDefs, directives),
+        }),
+        { listen: { port } },
+      ),
     ),
   );
   // eslint-disable-next-line no-console
@@ -106,7 +121,7 @@ const start = async (): Promise<void> => {
     gateway: apolloGateway,
   });
 
-  const { url } = await server.listen();
+  const { url } = await startStandaloneServer(server);
   // eslint-disable-next-line no-console
   console.log(`🚀  Server ready at ${url}`);
 };

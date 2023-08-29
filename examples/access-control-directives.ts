@@ -1,10 +1,10 @@
-import { ApolloServer } from 'apollo-server';
-import type { ExpressContext } from 'apollo-server-express';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 
 import type { MissingPermissionsResolverInfo } from '../lib';
-import { v3Auth, v3HasPermissions } from '../lib';
+import { applyDirectivesToSchema, hasPermissions, auth } from '../lib';
 
 const yourTypeDefs = [
   gql`
@@ -29,51 +29,54 @@ const state: {
   isAuthenticated: null,
 };
 
-const schema = makeExecutableSchema({
-  resolvers: {
-    Mutation: {
-      setAuthenticated: (
-        _,
-        { isAuthenticated }: { isAuthenticated: boolean | null },
-      ): boolean | null => {
-        state.isAuthenticated = isAuthenticated;
-        return isAuthenticated;
+const schema = applyDirectivesToSchema(
+  [hasPermissions, auth],
+  makeExecutableSchema({
+    resolvers: {
+      Mutation: {
+        setAuthenticated: (
+          _,
+          { isAuthenticated }: { isAuthenticated: boolean | null },
+        ): boolean | null => {
+          state.isAuthenticated = isAuthenticated;
+          return isAuthenticated;
+        },
+        setPermissions: (
+          _,
+          { permissions }: { permissions: string[] | null },
+        ): string[] | null => {
+          state.grantedPermissions = permissions;
+          return permissions;
+        },
       },
-      setPermissions: (
-        _,
-        { permissions }: { permissions: string[] | null },
-      ): string[] | null => {
-        state.grantedPermissions = permissions;
-        return permissions;
+      Query: {
+        authenticated: (): boolean => state.isAuthenticated || false,
+        handleMissingPermissions: (
+          _,
+          __,
+          ___,
+          { missingPermissions }: MissingPermissionsResolverInfo,
+        ): string[] | null => missingPermissions || null,
+        throwIfMissingPermissions: (): number => 123,
       },
     },
-    Query: {
-      authenticated: (): boolean => true,
-      handleMissingPermissions: (
-        _,
-        __,
-        ___,
-        { missingPermissions }: MissingPermissionsResolverInfo,
-      ): string[] | null => missingPermissions || null,
-      throwIfMissingPermissions: (): number => 123,
-    },
-  },
-  schemaDirectives: {
-    v3Auth,
-    v3HasPermissions,
-  },
-  typeDefs: [
-    ...yourTypeDefs,
-    ...v3Auth.getTypeDefs(),
-    ...v3HasPermissions.getTypeDefs(),
-  ],
-});
+    typeDefs: [
+      ...yourTypeDefs,
+      ...auth.getTypeDefs(),
+      ...hasPermissions.getTypeDefs(),
+    ],
+  }),
+);
 
-type Context = ReturnType<typeof v3Auth.createDirectiveContext> &
-  ReturnType<typeof v3HasPermissions.createDirectiveContext>;
+type Context = ReturnType<typeof auth.createDirectiveContext> &
+  ReturnType<typeof hasPermissions.createDirectiveContext>;
 
 const server = new ApolloServer({
-  context: (expressContext: ExpressContext): Context => {
+  schema,
+});
+
+startStandaloneServer(server, {
+  context: async (expressContext): Promise<Context> => {
     // This example allows for state to be passed in the headers:
     //  - authorization: any value results in authenticated
     //  - permissions: json-serialized array of strings or null
@@ -94,17 +97,16 @@ const server = new ApolloServer({
         : null;
     }
     return {
-      ...v3Auth.createDirectiveContext({
+      ...auth.createDirectiveContext({
         isAuthenticated: state.isAuthenticated,
       }),
-      ...v3HasPermissions.createDirectiveContext({
+      ...hasPermissions.createDirectiveContext({
         grantedPermissions: state.grantedPermissions || undefined,
       }),
     };
   },
-  schema,
-});
-server.listen().then(({ url }) => {
+  listen: { port: 4000 },
+}).then(({ url }) => {
   // eslint-disable-next-line no-console
   console.log(`🚀 Server ready at ${url}`);
 });
