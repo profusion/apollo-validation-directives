@@ -1,7 +1,7 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { buildSubgraphSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/subgraph';
 
 import range from './range';
 import listLength from './listLength';
@@ -14,29 +14,27 @@ interface MyType {
 
 const build = (isFederated: boolean): GraphQLSchema => {
   const buildSchema = isFederated ? buildSubgraphSchema : makeExecutableSchema;
-  return ValidateDirectiveVisitor.addValidationResolversToSchema(
-    buildSchema({
-      resolvers: {
-        Query: {
-          myType: (): MyType => ({ int: 2, list: [2] }),
-        },
+  return buildSchema({
+    resolvers: {
+      Query: {
+        myType: (): MyType => ({ int: 2, list: [2] }),
       },
-      typeDefs: [
-        ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
-        ...listLength.getTypeDefs(),
-        ...range.getTypeDefs(),
-        gql`
-          type MyType {
-            int: Int! @range(min: 20, policy: THROW)
-            list: [Int!]! @listLength(min: 1, policy: THROW)
-          }
-          type Query {
-            myType: MyType!
-          }
-        `,
-      ],
-    }),
-  );
+    },
+    typeDefs: [
+      ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
+      ...listLength.getTypeDefs(),
+      ...range.getTypeDefs(),
+      gql`
+        type MyType {
+          int: Int! @range(min: 20, policy: THROW)
+          list: [Int!]! @listLength(min: 1, policy: THROW)
+        }
+        type Query {
+          myType: MyType!
+        }
+      `,
+    ],
+  });
 };
 
 describe('Multiple Directives', () => {

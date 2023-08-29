@@ -1,9 +1,9 @@
 import type { GraphQLSchema } from 'graphql';
 import { graphql } from 'graphql';
-import { print } from 'graphql/language/printer';
 import type { ExecutionResult } from 'graphql/execution/execute';
 import gql from 'graphql-tag';
 
+import print from './utils/printer';
 import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
 import capitalize from './capitalize';
 
@@ -44,15 +44,22 @@ export type TestCase<TValue, TResult = TValue> = {
 
 export const validationDirectionEnumTypeDefs = (name: string): string => `\
 enum ${name}ValidateDirectivePolicy {
-  """Field resolver is responsible to evaluate it using \`validationErrors\` injected in GraphQLResolverInfo"""
+  """
+  Field resolver is responsible to evaluate it using \`validationErrors\` injected in GraphQLResolverInfo
+  """
   RESOLVER
-  """Field resolver is not called if occurs a validation error, it throws \`UserInputError\`"""
+  """
+  Field resolver is not called if occurs a validation error, it throws \`UserInputError\`
+  """
   THROW
 }`;
 
 export const validationDirectivePolicyArgs = (name: string): string => `\
 """How to handle validation errors"""
   policy: ${name}ValidateDirectivePolicy = RESOLVER`;
+
+const buildDescription = (text: string): string =>
+  text.length > 70 ? `"""\n${text}\n"""\n` : `"""${text}"""\n`;
 
 export const testEasyDirective = <TValue, TResult>({
   createSchema,
@@ -79,7 +86,9 @@ export const testEasyDirective = <TValue, TResult>({
 
     it('exports correct typeDefs', (): void => {
       const { description } = DirectiveVisitor.config;
-      const expectedDescription = description ? `"""${description}"""\n` : '';
+      const expectedDescription = description
+        ? buildDescription(description)
+        : '';
       expect(directiveTypeDefs).toBe(`\
 ${expectedDescription}\
 directive @${name}${expectedArgsTypeDefs} \
@@ -132,11 +141,11 @@ ${expectedUnknownTypeDefs}\
                     ? `fails with: ${errors.map(e => e.message).join(', ')}`
                     : 'works'
                 }`, async (): Promise<void> => {
-                  const result = await graphql(
+                  const result = await graphql({
+                    rootValue: itemRootValue || rootValue,
                     schema,
-                    itemOperation || operation,
-                    itemRootValue || rootValue,
-                  );
+                    source: itemOperation || operation,
+                  });
                   expect(result).toEqual({ data: null, ...expected });
                 });
               },

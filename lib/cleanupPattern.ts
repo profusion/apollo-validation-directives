@@ -19,7 +19,7 @@ const createValidate = ({
   );
 };
 
-export default createValidateDirectiveVisitor({
+const Visitor = createValidateDirectiveVisitor({
   createValidate,
   defaultName: 'cleanupPattern',
   directiveConfig: {
@@ -33,3 +33,5 @@ export default createValidateDirectiveVisitor({
     description: 'replaces a text based on a regex',
   },
 });
+
+export default Visitor;

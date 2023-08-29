@@ -1,11 +1,15 @@
-import type { GraphQLInputType, GraphQLNamedType } from 'graphql';
+import type {
+  GraphQLInputType,
+  GraphQLNamedType,
+  GraphQLOutputType,
+} from 'graphql';
 import { GraphQLList, GraphQLNonNull } from 'graphql';
 
 import type { ValidateFunction } from './ValidateDirectiveVisitor';
 
 const getListItemType = (
-  type: GraphQLNamedType | GraphQLInputType,
-): GraphQLNamedType | GraphQLInputType => {
+  type: GraphQLNamedType | GraphQLInputType | GraphQLOutputType,
+): GraphQLNamedType | GraphQLInputType | GraphQLOutputType => {
   let itemType = type;
   if (itemType instanceof GraphQLNonNull) itemType = itemType.ofType;
   if (itemType instanceof GraphQLList) itemType = itemType.ofType;
@@ -33,7 +37,7 @@ function validateArrayOrValue<TContext = object>(
 
   const validate: ValidateFunction<TContext> = (
     value: unknown,
-    type: GraphQLNamedType | GraphQLInputType,
+    type: GraphQLNamedType | GraphQLOutputType | GraphQLInputType,
     ...rest
   ): unknown => {
     if (Array.isArray(value)) {

@@ -8,6 +8,8 @@ export {
 // helper functions
 export { default as createValidateDirectiveVisitor } from './createValidateDirectiveVisitor';
 export { default as validateArrayOrValue } from './validateArrayOrValue';
+export { default as applyDirectivesToSchema } from './utils/applyDirectivesToSchema';
+export { default as createSchemaMapperForVisitor } from './createSchemaMapperForVisitor';
 
 // validation directives
 export {

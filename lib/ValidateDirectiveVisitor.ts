@@ -1,16 +1,5 @@
-import type {
-  DocumentNode,
-  GraphQLArgument,
-  GraphQLDirective,
-  GraphQLField,
-  GraphQLInputField,
-  GraphQLInputType,
-  GraphQLInterfaceType,
-  GraphQLNamedType,
-  GraphQLSchema,
-  DirectiveLocationEnum,
-} from 'graphql';
 import {
+  isInputObjectType,
   defaultFieldResolver,
   DirectiveLocation,
   GraphQLEnumType,
@@ -21,13 +10,28 @@ import {
   GraphQLScalarType,
   GraphQLString,
 } from 'graphql';
-import { ValidationError } from 'apollo-server-errors';
+import type {
+  DocumentNode,
+  GraphQLArgument,
+  GraphQLDirective,
+  GraphQLField,
+  GraphQLInputField,
+  GraphQLInputType,
+  GraphQLInterfaceType,
+  GraphQLSchema,
+  GraphQLFieldConfig,
+  GraphQLNamedType,
+  GraphQLOutputType,
+} from 'graphql';
+
+import { getDirective, inspect } from '@graphql-tools/utils';
 
 import EasyDirectiveVisitor, {
   getDirectiveDeclaration,
 } from './EasyDirectiveVisitor';
 
 import capitalize from './capitalize';
+import ValidationError from './errors/ValidationError';
 
 export enum ValidateDirectivePolicy {
   RESOLVER = 'RESOLVER',
@@ -54,7 +58,7 @@ type ResolverParameters<TContext> = {
 export type ValidateFunction<TContext = object> = {
   (
     value: unknown,
-    type: GraphQLNamedType | GraphQLInputType,
+    type: GraphQLNamedType | GraphQLOutputType | GraphQLInputType,
     container: GraphQLArgument | GraphQLInputObjectType | GraphQLObjectType,
     context: TContext,
     resolverInfo: AnyObject,
@@ -275,7 +279,7 @@ const validateContainerEntry = <TContext>(
 // it will not change the fieldResolveParameters args in-place!
 const validateFieldArguments = <TContext>(
   fieldResolveParameters: ResolverParameters<TContext>,
-  definitions: GraphQLArgument[],
+  definitions: readonly GraphQLArgument[],
   validationErrorsArgumentName: string,
 ): AnyObject => {
   let validatedArgs = fieldResolveParameters.args;
@@ -473,7 +477,7 @@ const validateEntryValueThrowing = <TContext>(
   }
 
   /* istanbul ignore next */
-  throw new TypeError(`unsupported type ${type.inspect()}`);
+  throw new TypeError(`unsupported type ${inspect(type)}`);
 };
 
 const isErrorRegistered = (
@@ -618,7 +622,7 @@ const wrapFieldResolverValidateArgument = <TContext>(
 
   const { resolve = defaultFieldResolver } = field;
   // eslint-disable-next-line no-param-reassign
-  field.resolve = function (...resolveArgs): Promise<unknown> {
+  field.resolve = function (...resolveArgs): unknown {
     const fieldResolveParameters: ResolverParameters<TContext> = {
       args: resolveArgs[1],
       context: resolveArgs[2],
@@ -642,7 +646,9 @@ const wrapFieldResolverValidateArgument = <TContext>(
 export const setFieldResolveToApplyOriginalResolveAndThenValidateResult = <
   TContext,
 >(
-  field: GraphQLField<unknown, TContext>,
+  field:
+    | GraphQLFieldConfig<unknown, TContext>
+    | GraphQLField<unknown, TContext>,
   validate: ValidateFunction<TContext>,
   objectType: GraphQLObjectType,
 ): void => {
@@ -670,7 +676,9 @@ export const setFieldResolveToApplyOriginalResolveAndThenValidateResult = <
 };
 
 export const setFieldResolveToValidateAndThenApplyOriginalResolve = <TContext>(
-  field: GraphQLField<unknown, TContext>,
+  field:
+    | GraphQLFieldConfig<unknown, TContext>
+    | GraphQLField<unknown, TContext>,
   validate: ValidateFunction<TContext>,
   objectType: GraphQLObjectType,
 ): void => {
@@ -682,22 +690,6 @@ export const setFieldResolveToValidateAndThenApplyOriginalResolve = <TContext>(
     return resolve.apply(this, args);
   };
 };
-
-// If an input object contains a field that requires validation,
-// then it also requires validation. It may be a direct reference
-// or a deeply nested, including lists and non-null modifiers.
-//
-// Marking every field with true/false will speed up lookups since
-// we don't need to navigate the nested objects every time.
-const markInputObjectsRequiringValidation = (
-  inputObjects: GraphQLInputObjectType[],
-): void =>
-  inputObjects.forEach((type: ValidatedGraphQLInputObjectType): void => {
-    if (type.mustValidateInput === undefined) {
-      // eslint-disable-next-line no-param-reassign
-      type.mustValidateInput = checkMustValidateInput(type);
-    }
-  });
 
 // Fields that have argument may require validation if their input
 // object requires it (see markInputObjectsRequiringValidation()),
@@ -721,30 +713,6 @@ const wrapFieldsRequiringValidation = <TContext>(
       });
     },
   );
-
-const collectInputObjectsAndFieldsWithArguments = (
-  schema: GraphQLSchema,
-): {
-  fieldsWithArguments: GraphQLField<unknown, unknown>[];
-  inputObjects: GraphQLInputObjectType[];
-} => {
-  const fieldsWithArguments: GraphQLField<unknown, unknown>[] = [];
-  const inputObjects: GraphQLInputObjectType[] = [];
-
-  Object.values(schema.getTypeMap()).forEach(type => {
-    if (type instanceof GraphQLObjectType) {
-      Object.values(type.getFields()).forEach(field => {
-        if (field.args.length > 0) {
-          fieldsWithArguments.push(field);
-        }
-      });
-    } else if (type instanceof GraphQLInputObjectType) {
-      inputObjects.push(type);
-    }
-  });
-
-  return { fieldsWithArguments, inputObjects };
-};
 
 /**
  * Abstract class to implement value validation in both input and output values
@@ -871,33 +839,6 @@ abstract class ValidateDirectiveVisitor<
   public static readonly validationErrorsArgumentName = 'validationErrors';
 
   /**
-   * Patches the schema and add field resolver wrappers to execute
-   * argument validation if a field argument refers to an input object
-   * that requires validation (see markInputObjectsRequiringValidation()).
-   *
-   * Arguments with explicit validation functions or field results are not
-   * handled by this function as they are handled by `ValidateDirectiveVisitor`
-   * subclasses directly.
-   *
-   * @param schema the schema to be patched with validation resolvers.
-   */
-  public static addValidationResolversToSchema(
-    schema: GraphQLSchema,
-  ): GraphQLSchema {
-    const { fieldsWithArguments, inputObjects } =
-      collectInputObjectsAndFieldsWithArguments(schema);
-
-    markInputObjectsRequiringValidation(inputObjects);
-
-    wrapFieldsRequiringValidation(
-      fieldsWithArguments,
-      this.validationErrorsArgumentName,
-    );
-
-    return schema;
-  }
-
-  /**
    * Should check the directive arguments (`this.args`) and return a
    * validation function or `undefined` if no validation should be done
    * for those arguments.
@@ -908,7 +849,7 @@ abstract class ValidateDirectiveVisitor<
    *  - `Array` for list fields.
    */
   public abstract getValidationForArgs(
-    location: DirectiveLocationEnum,
+    location: DirectiveLocation,
   ): ValidateFunction<TContext> | undefined;
 
   // Arguments directly annotated with the directive, such as
@@ -919,7 +860,7 @@ abstract class ValidateDirectiveVisitor<
   // to validate the argument.
   public visitArgumentDefinition(
     argument: GraphQLArgument,
-    { field }: { field: GraphQLField<unknown, unknown> },
+    { field }: { field: GraphQLField<unknown, TContext> },
   ): void {
     const validate = this.getValidationForArgs(
       DirectiveLocation.ARGUMENT_DEFINITION,
@@ -957,8 +898,10 @@ abstract class ValidateDirectiveVisitor<
 
   public visitInputObject(object: GraphQLInputObjectType): void {
     const validate = this.getValidationForArgs(DirectiveLocation.INPUT_OBJECT);
+    // istanbul ignore if (shouldn't reach, visitInputObject() is called only if there is a directive)
     if (!validate) return;
     const { policy } = this.args;
+
     Object.values(object.getFields()).forEach(field => {
       addContainerEntryValidation(object, field, validate, policy);
     });
@@ -985,7 +928,9 @@ abstract class ValidateDirectiveVisitor<
   // wrapFieldResolverResult()
 
   public visitFieldDefinition(
-    field: GraphQLField<unknown, TContext>,
+    field:
+      | GraphQLFieldConfig<unknown, TContext, TArgs>
+      | GraphQLField<unknown, TContext>,
     {
       objectType,
     }: {
@@ -1030,6 +975,83 @@ abstract class ValidateDirectiveVisitor<
       }
     });
   }
+
+  public visitQuery(
+    query: GraphQLObjectType<unknown, TContext>,
+    schema: GraphQLSchema,
+    directiveName: string,
+  ): void {
+    const fields = Object.values(query.getFields());
+    fields.forEach(field => {
+      const [directive] = getDirective(schema, field, directiveName) ?? [];
+      if (directive) {
+        this.args = directive as TArgs;
+        this.visitFieldDefinition(field, { objectType: query });
+      }
+
+      field.args.forEach(arg => {
+        const [directiveOnArg] = getDirective(schema, arg, directiveName) ?? [];
+        if (directiveOnArg) {
+          this.args = directiveOnArg as TArgs;
+          this.visitArgumentDefinition(arg, { field });
+        }
+
+        const finalType = getFinalType(arg.type);
+        if (isInputObjectType(finalType)) {
+          this.visitInputFieldsRecursively(
+            finalType,
+            field,
+            arg,
+            schema,
+            directiveName,
+          );
+        }
+      });
+    });
+
+    wrapFieldsRequiringValidation(
+      fields,
+      ValidateDirectiveVisitor.validationErrorsArgumentName,
+    );
+  }
+
+  private visitInputFieldsRecursively = (
+    inputObject: GraphQLInputObjectType,
+    queryField: GraphQLField<unknown, TContext, unknown>,
+    arg: GraphQLArgument,
+    schema: GraphQLSchema,
+    directiveName: string,
+    path: string[] = [],
+  ): void => {
+    const [directive] = getDirective(schema, inputObject, directiveName) ?? [];
+
+    if (directive) {
+      this.args = directive as TArgs;
+      this.visitInputObject(inputObject);
+    }
+
+    Object.values(inputObject.getFields()).forEach(inputField => {
+      const [directiveOnInputField] =
+        getDirective(schema, inputField, directiveName) ?? [];
+
+      if (directiveOnInputField) {
+        this.args = directiveOnInputField as TArgs;
+        this.visitInputFieldDefinition(inputField, { objectType: inputObject });
+      }
+
+      const inputFieldType = getFinalType(inputField.type);
+      if (isInputObjectType(inputFieldType)) {
+        this.visitInputFieldsRecursively(
+          inputFieldType,
+          queryField,
+          arg,
+          schema,
+          directiveName,
+          [...path, inputField.name],
+        );
+      }
+    });
+  };
 }
 
 export default ValidateDirectiveVisitor;

@@ -9,10 +9,10 @@ import {
   GraphQLInt,
   GraphQLBoolean,
 } from 'graphql';
-import { print } from 'graphql/language/printer';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import gql from 'graphql-tag';
 
+import print from './utils/printer';
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
 
 describe('EasyDirectiveVisitor', (): void => {
@@ -142,7 +142,7 @@ enum SomeEnum {
           args: {},
           astNode: undefined,
           description: undefined,
-          extensions: undefined,
+          extensions: {},
           isRepeatable: false,
           locations,
           name,
@@ -175,7 +175,7 @@ enum SomeEnum {
             defaultValue: 123,
             deprecationReason: undefined,
             description: undefined,
-            extensions: undefined,
+            extensions: {},
             type: GraphQLInt,
           },
         });
@@ -322,34 +322,34 @@ enum SomeEnum {
         defaultValue: undefined,
         deprecationReason: undefined,
         description: undefined,
-        extensions: undefined,
+        extensions: {},
       },
       complex: {
         ...DirectiveWithArgs.config.args.complex,
         astNode: undefined,
         deprecationReason: undefined,
-        extensions: undefined,
+        extensions: {},
       },
       customEnum: {
         ...DirectiveWithArgs.config.args.customEnum,
         astNode: undefined,
         deprecationReason: undefined,
         description: undefined,
-        extensions: undefined,
+        extensions: {},
       },
       int: {
         ...DirectiveWithArgs.config.args.int,
         astNode: undefined,
         deprecationReason: undefined,
         description: undefined,
-        extensions: undefined,
+        extensions: {},
       },
       nullField: {
         ...DirectiveWithArgs.config.args.nullField,
         astNode: undefined,
         deprecationReason: undefined,
         description: undefined,
-        extensions: undefined,
+        extensions: {},
       },
     };
 
@@ -365,7 +365,7 @@ enum SomeEnum {
           args: expectedArgs,
           astNode: undefined,
           description: undefined,
-          extensions: undefined,
+          extensions: {},
           isRepeatable: false,
           locations,
           name,
@@ -399,7 +399,7 @@ enum SomeEnum {
             defaultValue: 123,
             deprecationReason: undefined,
             description: undefined,
-            extensions: undefined,
+            extensions: {},
             type: GraphQLInt,
           },
         });
@@ -439,6 +439,7 @@ enum SomeEnum {
               name: expect.objectContaining({ kind: 'Name', value: 'bool' }),
             }),
             description: 'Docs will be kept',
+            extensions: {},
           },
         });
         expect(conf.name).toEqual(name);

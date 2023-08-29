@@ -1,14 +1,17 @@
-import { AuthenticationError } from 'apollo-server-errors';
-
+import { defaultFieldResolver, DirectiveLocation } from 'graphql';
 import type {
   GraphQLField,
   GraphQLFieldResolver,
   GraphQLInterfaceType,
   GraphQLObjectType,
+  GraphQLFieldConfig,
+  GraphQLSchema,
 } from 'graphql';
-import { defaultFieldResolver, DirectiveLocation } from 'graphql';
+
+import { getDirective } from '@graphql-tools/utils';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import AuthenticationError from './errors/AuthenticationError';
 
 type ResolverArgs<TContext extends object = object> = Parameters<
   GraphQLFieldResolver<unknown, TContext>
@@ -18,7 +21,7 @@ export type AuthContext<TContext extends object = object> = {
   isAuthenticated: (...args: ResolverArgs<TContext>) => boolean;
 };
 
-export class AuthDirectiveVisitor<
+class AuthDirectiveVisitor<
   TContext extends AuthContext,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 > extends EasyDirectiveVisitor<any, TContext> {
@@ -50,12 +53,16 @@ export class AuthDirectiveVisitor<
     });
   }
 
-  public visitFieldDefinition(field: GraphQLField<unknown, TContext>): void {
+  public visitFieldDefinition(
+    field:
+      | GraphQLFieldConfig<unknown, TContext>
+      | GraphQLField<unknown, TContext>,
+  ): void {
     const { resolve = defaultFieldResolver } = field;
     const { errorMessage } = this;
 
     // eslint-disable-next-line no-param-reassign
-    field.resolve = function (...args): Promise<unknown> {
+    field.resolve = function (...args): unknown {
       const { isAuthenticated } = args[2];
       if (!isAuthenticated.apply(this, args)) {
         throw new AuthenticationError(errorMessage);
@@ -63,6 +70,21 @@ export class AuthDirectiveVisitor<
 
       return resolve.apply(this, args);
     };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public visitQuery(
+    query: GraphQLObjectType<unknown, TContext>,
+    schema: GraphQLSchema,
+    directiveName: string,
+  ): void {
+    const fields = Object.values(query.getFields());
+    fields.forEach(field => {
+      const [directive] = getDirective(schema, field, directiveName) ?? [];
+      if (directive) {
+        this.visitFieldDefinition(field);
+      }
+    });
   }
 }
 

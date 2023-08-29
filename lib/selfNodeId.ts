@@ -1,6 +1,7 @@
 import type { GraphQLObjectType, GraphQLInterfaceType } from 'graphql';
 import { DirectiveLocation } from 'graphql';
-import { ValidationError } from 'apollo-server-errors';
+
+import ValidationError from './errors/ValidationError';
 
 import type { ValidateFunction } from './ValidateDirectiveVisitor';
 import type ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
@@ -24,8 +25,9 @@ export type SelfNodeIdContext<_ extends object = object> = {
 export default class SelfNodeIdDirective<
   _ extends SelfNodeIdContext,
 > extends ValidateDirectiveVisitorNonTyped {
+  // eslint-disable-next-line class-methods-use-this
   public getValidationForArgs(): ValidateFunction<SelfNodeIdContext> {
-    const errorMessage = `${this.name} directive only works on strings`;
+    const errorMessage = `selfNodeId directive only works on strings`;
     return (
       value: unknown,
       _,

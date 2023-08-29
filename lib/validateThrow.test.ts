@@ -1,10 +1,10 @@
 import gql from 'graphql-tag';
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql, GraphQLError } from 'graphql';
-import { print } from 'graphql/language/printer';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import range from './range';
+import print from './utils/printer';
+import Range from './range';
 
 interface ArgsTestResolverCtx {
   shouldCallResolver: boolean;
@@ -37,7 +37,7 @@ describe('validate THROW policy', () => {
   beforeEach(() => {
     mockResolver.mockClear();
   });
-  const schema = range.addValidationResolversToSchema(
+  const schema = new Range().applyToSchema(
     makeExecutableSchema({
       resolvers: {
         Query: {
@@ -47,12 +47,9 @@ describe('validate THROW policy', () => {
           outputTest: outputMockResolver,
         },
       },
-      schemaDirectives: {
-        range,
-      },
       typeDefs: [
-        ...range.getTypeDefs(),
-        ...range.getMissingCommonTypeDefs(),
+        ...Range.getTypeDefs(),
+        ...Range.getMissingCommonTypeDefs(),
         gql`
           input ThirdInput {
             n: Int @range(max: 200, policy: THROW)
@@ -82,7 +79,7 @@ describe('validate THROW policy', () => {
   const doTest = async (
     query: string,
     resolverName: string,
-    variables: Record<string, unknown>,
+    variableValues: Record<string, unknown>,
     {
       shouldCallResolver,
       values,
@@ -90,13 +87,11 @@ describe('validate THROW policy', () => {
     }: ArgsTestResolverCtx,
     expectedErrors?: Error[],
   ): Promise<void> => {
-    const { data, errors } = await graphql(
+    const { data, errors } = await graphql({
       schema,
-      query,
-      null,
-      null,
-      variables,
-    );
+      source: query,
+      variableValues,
+    });
     expect(mockResolver.mock.calls.length).toBe(shouldCallResolver ? 1 : 0);
     if (shouldCallResolver) {
       const [call] = mockResolver.mock.calls;
@@ -118,20 +113,18 @@ describe('validate THROW policy', () => {
   const doOutputTest = async (
     query: string,
     resolverName: string,
-    variables: Record<string, unknown>,
+    variableValues: Record<string, unknown>,
     {
       isOptional,
       shouldContainOutputValidationErrors,
     }: ArgsOutputTestResolverCtx,
     expectedErrors?: Error[],
   ): Promise<void> => {
-    const { data, errors } = await graphql(
+    const { data, errors } = await graphql({
       schema,
-      query,
-      null,
-      null,
-      variables,
-    );
+      source: query,
+      variableValues,
+    });
     expect(mockResolver.mock.calls.length).toBe(1);
     if (shouldContainOutputValidationErrors) {
       expect(data && data[resolverName]).toBeFalsy();

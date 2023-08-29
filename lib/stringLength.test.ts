@@ -1,9 +1,8 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
-import stringLength from './stringLength';
+import StringLength from './stringLength';
 import capitalize from './capitalize';
 
 import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
@@ -11,6 +10,7 @@ import {
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';
+import ValidationError from './errors/ValidationError';
 
 type RootValue = {
   arrayTest?: (string | null)[] | null;
@@ -21,13 +21,10 @@ const createSchema = ({
   name,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
-  stringLength.addValidationResolversToSchema(
+  new StringLength().applyToSchema(
     makeExecutableSchema({
-      schemaDirectives: {
-        [name]: stringLength,
-      },
       typeDefs: [
-        ...stringLength.getTypeDefs(name, undefined, true, true),
+        ...StringLength.getTypeDefs(name, undefined, true, true),
         gql`
                 type Query {
                   test: String @${name}${directiveArgs}
@@ -50,12 +47,16 @@ const name = 'stringLength';
 
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: stringLength,
+  DirectiveVisitor: StringLength,
   expectedArgsTypeDefs: `\
 (
-  """The maximum string length (inclusive) to allow. If null, no upper limit is applied"""
+  """
+  The maximum string length (inclusive) to allow. If null, no upper limit is applied
+  """
   max: Float = null
-  """The minimum string length (inclusive) to allow. If null, no lower limit is applied"""
+  """
+  The minimum string length (inclusive) to allow. If null, no lower limit is applied
+  """
   min: Float = null
   ${validationDirectivePolicyArgs(capitalize(name))}
 )`,

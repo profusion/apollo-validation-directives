@@ -1,5 +1,6 @@
-import { ValidationError } from 'apollo-server-errors';
 import { GraphQLNonNull, GraphQLString } from 'graphql';
+
+import ValidationError from './errors/ValidationError';
 
 import type {
   ValidationDirectiveArgs,

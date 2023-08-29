@@ -1,9 +1,8 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
-import listLength from './listLength';
+import ListLength from './listLength';
 import capitalize from './capitalize';
 
 import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
@@ -11,25 +10,27 @@ import {
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';
+import ValidationError from './errors/ValidationError';
 
 type RootValue = {
   test?: (string | null)[] | null;
   stringTest?: string | null;
 };
 
+const name = 'listLength';
+
 const createSchema = ({
-  name,
+  name: directiveName,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
-  listLength.addValidationResolversToSchema(
+  new ListLength().applyToSchema(
     makeExecutableSchema({
-      schemaDirectives: { [name]: listLength },
       typeDefs: [
-        ...listLength.getTypeDefs(name, undefined, true, true),
+        ...ListLength.getTypeDefs(directiveName, undefined, true, true),
         gql`
                 type Query {
-                  test: [String] @${name}${directiveArgs}
-                  stringTest: String @${name}${directiveArgs}
+                  test: [String] @${directiveName}${directiveArgs}
+                  stringTest: String @${directiveName}${directiveArgs}
                 }
               `,
       ],
@@ -44,16 +45,18 @@ const expectedValidationError = (
   errors: [new ValidationError(message)],
 });
 
-const name = 'listLength';
-
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: listLength,
+  DirectiveVisitor: ListLength,
   expectedArgsTypeDefs: `\
 (
-  """The maximum list length (inclusive) to allow. If null, no upper limit is applied"""
+  """
+  The maximum list length (inclusive) to allow. If null, no upper limit is applied
+  """
   max: Float = null
-  """The minimum list length (inclusive) to allow. If null, no lower limit is applied"""
+  """
+  The minimum list length (inclusive) to allow. If null, no lower limit is applied
+  """
   min: Float = null
   ${validationDirectivePolicyArgs(capitalize(name))}
 )`,

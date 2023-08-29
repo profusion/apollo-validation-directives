@@ -18,32 +18,35 @@ describe('createValidateDirectiveVisitor', (): void => {
   });
 
   it('defaults work', async (): Promise<void> => {
-    const directive = createValidateDirectiveVisitor({
+    const Directive = createValidateDirectiveVisitor({
       createValidate,
       defaultName,
     });
-    const schema = makeExecutableSchema({
-      schemaDirectives: {
-        [defaultName]: directive,
-      },
-      typeDefs: [
-        ...directive.getTypeDefs(),
-        gql`
-        type Query {
-          item: Int @${defaultName}
-          list: [Int] @${defaultName}
-        }
-      `,
-      ],
-    });
+    const schema = new Directive().applyToSchema(
+      makeExecutableSchema({
+        typeDefs: [
+          ...Directive.getTypeDefs(),
+          gql`
+          type Query {
+            item: Int @${defaultName}
+            list: [Int] @${defaultName}
+          }
+        `,
+        ],
+      }),
+    );
     const rootValue = { item: 2, list: [3, 4] };
 
-    expect(directive.name).toBe('TestDirectiveDirectiveVisitor');
-    expect(directive.defaultName).toBe(defaultName);
-    expect(directive.commonTypes).toBe(ValidateDirectiveVisitor.commonTypes);
-    expect(directive.config).toBe(ValidateDirectiveVisitor.config);
+    expect(Directive.name).toBe('TestDirectiveDirectiveVisitor');
+    expect(Directive.defaultName).toBe(defaultName);
+    expect(Directive.commonTypes).toBe(ValidateDirectiveVisitor.commonTypes);
+    expect(Directive.config).toBe(ValidateDirectiveVisitor.config);
 
-    const result = await graphql(schema, '{ item list }', rootValue);
+    const result = await graphql({
+      rootValue,
+      schema,
+      source: '{ item list }',
+    });
     expect(result).toEqual({
       data: {
         item: rootValue.item * 2,
@@ -68,36 +71,35 @@ describe('createValidateDirectiveVisitor', (): void => {
         arg: { type: GraphQLBoolean },
       },
     };
-    const directive = createValidateDirectiveVisitor({
+    const Directive = createValidateDirectiveVisitor({
       createValidate,
       defaultName,
       directiveConfig,
       extraCommonTypes,
       isValidateArrayOrValue: false,
     });
-    const schema = makeExecutableSchema({
-      schemaDirectives: {
-        [defaultName]: directive,
-      },
-      typeDefs: [
-        ...directive.getTypeDefs(),
-        gql`
-        type Query {
-          item: Int @${defaultName}(arg: true)
-          list: [Int] @${defaultName}(arg: true)
-        }
-      `,
-      ],
-    });
+    const schema = new Directive().applyToSchema(
+      makeExecutableSchema({
+        typeDefs: [
+          ...Directive.getTypeDefs(),
+          gql`
+          type Query {
+            item: Int @${defaultName}(arg: true)
+            list: [Int] @${defaultName}(arg: true)
+          }
+        `,
+        ],
+      }),
+    );
     const rootValue = { item: 2, list: [3, 4] };
 
-    expect(directive.name).toBe('TestDirectiveDirectiveVisitor');
-    expect(directive.defaultName).toBe(defaultName);
-    expect(directive.commonTypes).toEqual([
+    expect(Directive.name).toBe('TestDirectiveDirectiveVisitor');
+    expect(Directive.defaultName).toBe(defaultName);
+    expect(Directive.commonTypes).toEqual([
       ...ValidateDirectiveVisitor.commonTypes,
       ...extraCommonTypes,
     ]);
-    expect(directive.config).toEqual({
+    expect(Directive.config).toEqual({
       ...ValidateDirectiveVisitor.config,
       ...directiveConfig,
       args: {
@@ -106,7 +108,11 @@ describe('createValidateDirectiveVisitor', (): void => {
       },
     });
 
-    const result = await graphql(schema, '{ item list }', rootValue);
+    const result = await graphql({
+      rootValue,
+      schema,
+      source: '{ item list }',
+    });
     expect(result).toEqual({
       data: {
         item: rootValue.item * 2,

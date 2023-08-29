@@ -1,9 +1,7 @@
-import { ForbiddenError } from 'apollo-server-errors';
 import type {
   GraphQLFieldResolver,
   GraphQLResolveInfo,
   GraphQLSchema,
-  DirectiveLocationEnum,
   GraphQLDirective,
   GraphQLInputObjectType,
   GraphQLArgument,
@@ -21,6 +19,7 @@ import {
 import isEqual from 'lodash.isequal';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import ForbiddenError from './errors/ForbiddenError';
 
 import type { ValidateFunction } from './ValidateDirectiveVisitor';
 import ValidateDirectiveVisitor, {
@@ -217,7 +216,8 @@ export class HasPermissionsDirectiveVisitor<
     : prodGetErrorMessage;
 
   public getValidationForArgs(
-    location: DirectiveLocationEnum,
+    location: DirectiveLocation,
+    // args: TArgs,
   ): ValidateFunction<TContext> | undefined {
     const { permissions, policy } = this.args;
     const cacheKey = JSON.stringify(Array.from(permissions).sort());

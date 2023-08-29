@@ -1,15 +1,15 @@
 import { graphql } from 'graphql';
-import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
+import print from './utils/printer';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
 } from './test-utils.test';
 import SelfNodeId from './selfNodeId';
 import capitalize from './capitalize';
+import ValidationError from './errors/ValidationError';
 
 const toNodeId = (name: string, id: string): string =>
   Buffer.from(`${name}:${id}`).toString('base64');
@@ -53,11 +53,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect.assertions(1);
       const typeName = 'TypeWithNoId';
       expect(() =>
-        SelfNodeId.addValidationResolversToSchema(
+        new SelfNodeId().applyToSchema(
           makeExecutableSchema({
-            schemaDirectives: {
-              selfNodeId: SelfNodeId,
-            },
             typeDefs: [
               ...directiveTypeDefs,
               gql`
@@ -83,11 +80,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const type1Id = 'ThisIsAnId';
     const type2Id = 'ThisIsAnotherId';
     const type4Id = 'type4Id';
-    const schema = SelfNodeId.addValidationResolversToSchema(
+    const schema = new SelfNodeId().applyToSchema(
       makeExecutableSchema({
-        schemaDirectives: {
-          selfNodeId: SelfNodeId,
-        },
         typeDefs: [
           ...directiveTypeDefs,
           gql`
@@ -181,10 +175,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     };
 
     it('Correctly converts to node ID', async (): Promise<void> => {
-      const context = SelfNodeId.createDirectiveContext({
+      const contextValue = SelfNodeId.createDirectiveContext({
         toNodeId,
       });
-      const result = await graphql(schema, source, rootValue, context);
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: {
           test: {
@@ -219,10 +218,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     it('Correctly converts to node ID', async (): Promise<void> => {
-      const context = SelfNodeId.createDirectiveContext({
+      const contextValue = SelfNodeId.createDirectiveContext({
         toNodeId: () => null,
       });
-      const result = await graphql(schema, source, rootValue, context);
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: {
           test: {

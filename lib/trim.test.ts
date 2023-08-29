@@ -2,7 +2,7 @@ import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import trim, {
+import Trim, {
   createValidate as createTrimDirectiveValidate,
   DEFAULT_TRIM_MODE,
   trimDirectiveSchemaEnumName,
@@ -30,15 +30,16 @@ type RootValue = {
   obj?: { toString(): string };
 };
 
+const directiveName = 'trim';
+
 const createSchema = ({
   name,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
-  trim.addValidationResolversToSchema(
+  new Trim().applyToSchema(
     makeExecutableSchema({
-      schemaDirectives: { [name]: trim },
       typeDefs: [
-        ...trim.getTypeDefs(name, undefined, true, true),
+        ...Trim.getTypeDefs(name, undefined, true, true),
         gql`
                 type Query {
                   test: String @${name}${directiveArgs}
@@ -47,8 +48,6 @@ const createSchema = ({
       ],
     }),
   );
-
-const name = 'trim';
 
 const expectedResult = (
   value: string,
@@ -108,22 +107,24 @@ describe('directive @trim error tests', () => {
 
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: trim,
+  DirectiveVisitor: Trim,
   expectedArgsTypeDefs: `\
 (
   mode: ${trimDirectiveSchemaEnumName}! = ${DEFAULT_TRIM_MODE}
-  ${validationDirectivePolicyArgs(capitalize(name))}
+  ${validationDirectivePolicyArgs(capitalize(directiveName))}
 )`,
   expectedUnknownTypeDefs: `enum ${trimDirectiveSchemaEnumName} {
-  """The value of this field will have both start and end of the string trimmed"""
+  """
+  The value of this field will have both start and end of the string trimmed
+  """
   ${TrimMode.TRIM_ALL}
   """The value of this field will have only the end of the string trimmed"""
   ${TrimMode.TRIM_END}
   """The value of this field will have only the start of the string trimmed"""
   ${TrimMode.TRIM_START}
 }
-${validationDirectionEnumTypeDefs(capitalize(name))}`,
-  name,
+${validationDirectionEnumTypeDefs(capitalize(directiveName))}`,
+  name: directiveName,
   testCases: [
     {
       directiveArgs: `(mode: ${TrimMode.TRIM_ALL} )`,

@@ -1,5 +1,4 @@
 import { DirectiveLocation, GraphQLNonNull, GraphQLString } from 'graphql';
-import { ValidationError } from 'apollo-server-errors';
 
 import type {
   ValidateFunction,
@@ -7,6 +6,7 @@ import type {
 } from './ValidateDirectiveVisitor';
 import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
 import validateArrayOrValue from './validateArrayOrValue';
+import ValidationError from './errors/ValidationError';
 
 export type ToNodeId<IdType> = (
   id: string,
@@ -24,11 +24,12 @@ export default class ForeignNodeIdDirective<
   IdType,
   _ extends ForeignNodeIdContext<IdType>,
 > extends ValidateDirectiveVisitorNonTyped {
+  // eslint-disable-next-line class-methods-use-this
   public getValidationForArgs():
     | ValidateFunction<ForeignNodeIdContext<IdType>>
     | undefined {
-    const { typename } = this.args as Args;
-    const wrongUsageErrorMessage = `${this.name} directive only works on strings`;
+    const { typename } = this.args;
+    const wrongUsageErrorMessage = `foreignNodeId directive only works on strings`;
     const wrongTypeNameErrorMessage = `Converted ID typename does not match. Expected: ${typename}`;
     const couldNotDecodeErrorMessage = `Could not decode ID to ${typename}`;
     const itemValidate = (

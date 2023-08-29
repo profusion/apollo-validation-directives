@@ -1,9 +1,8 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
-import range from './range';
+import Range from './range';
 import capitalize from './capitalize';
 
 import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
@@ -11,6 +10,7 @@ import {
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';
+import ValidationError from './errors/ValidationError';
 
 type RootValue = {
   arrayTest?: (number | null)[] | null;
@@ -21,11 +21,11 @@ const createSchema = ({
   name,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
-  range.addValidationResolversToSchema(
+  new Range().applyToSchema(
     makeExecutableSchema({
-      schemaDirectives: { [name]: range },
+      // schemaDirectives: { [name]: range },
       typeDefs: [
-        ...range.getTypeDefs(name, undefined, true, true),
+        ...Range.getTypeDefs(name, undefined, true, true),
         gql`
                 type Query {
                   test: Int @${name}${directiveArgs}
@@ -48,12 +48,16 @@ const name = 'range';
 
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: range,
+  DirectiveVisitor: Range,
   expectedArgsTypeDefs: `\
 (
-  """The maximum value (inclusive) to allow. If null, no upper limit is applied"""
+  """
+  The maximum value (inclusive) to allow. If null, no upper limit is applied
+  """
   max: Float = null
-  """The minimum value (inclusive) to allow. If null, no lower limit is applied"""
+  """
+  The minimum value (inclusive) to allow. If null, no lower limit is applied
+  """
   min: Float = null
   ${validationDirectivePolicyArgs(capitalize(name))}
 )`,

@@ -1,9 +1,8 @@
-import { ValidationError } from 'apollo-server-errors';
-
 import type { ValidateFunction } from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
 import type { PatternDirectiveArgs } from './patternCommon';
 import createPatternHandler, { defaultArgs } from './patternCommon';
+import ValidationError from './errors/ValidationError';
 
 const createValidate = ({
   regexp,

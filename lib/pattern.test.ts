@@ -1,11 +1,10 @@
 import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
 import type { IResolvers } from '@graphql-tools/utils';
 
-import pattern from './pattern';
+import Pattern from './pattern';
 import capitalize from './capitalize';
 
 import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
@@ -13,6 +12,7 @@ import {
   testEasyDirective,
   validationDirectivePolicyArgs,
 } from './test-utils.test';
+import ValidationError from './errors/ValidationError';
 
 type RootValue = {
   arrayTest?: (string | null)[] | null;
@@ -30,7 +30,7 @@ const createSchema = ({
   name,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue, ResultValue>): GraphQLSchema =>
-  pattern.addValidationResolversToSchema(
+  new Pattern().applyToSchema(
     makeExecutableSchema({
       resolvers: {
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -38,9 +38,8 @@ const createSchema = ({
           toString: (obj: object): string => obj.toString(),
         } as IResolvers,
       },
-      schemaDirectives: { [name]: pattern },
       typeDefs: [
-        ...pattern.getTypeDefs(name, undefined, true, true),
+        ...Pattern.getTypeDefs(name, undefined, true, true),
         gql`
                 type SomeObj {
                   toString: String
@@ -69,7 +68,7 @@ const name = 'pattern';
 
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: pattern,
+  DirectiveVisitor: Pattern,
   expectedArgsTypeDefs: `\
 (
   flags: String

@@ -2,8 +2,13 @@ import type {
   DocumentNode,
   GraphQLArgument,
   GraphQLDirectiveConfig,
+  GraphQLField,
+  GraphQLFieldConfig,
+  GraphQLInputField,
   GraphQLInputType,
+  GraphQLInterfaceType,
   GraphQLNamedType,
+  GraphQLObjectType,
   GraphQLSchema,
   GraphQLType,
 } from 'graphql';
@@ -18,7 +23,8 @@ import {
   printType,
 } from 'graphql';
 import gql from 'graphql-tag';
-import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
+
+import createSchemaMapperForVisitor from './createSchemaMapperForVisitor';
 
 export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<{
   [P in keyof Omit<GraphQLDirectiveConfig, 'name'>]: Readonly<
@@ -106,9 +112,10 @@ const patchDirective = (
   directive: GraphQLDirective,
   { args, locations }: ReadonlyGraphQLDirectiveConfigWithoutName,
 ): GraphQLDirective => {
+  const directiveConfig = directive.toConfig();
   locations.forEach(loc => {
     if (!directive.locations.includes(loc)) {
-      directive.locations.push(loc);
+      directiveConfig.locations = [...directiveConfig.locations, loc];
     }
   });
 
@@ -128,22 +135,22 @@ const patchDirective = (
         const arg = directive.args.find(({ name }) => argName === name);
         if (arg) {
           arg.type = type;
+          directiveConfig.args[argName] = arg;
         } else {
-          directive.args.push({
+          directiveConfig.args[argName] = {
             astNode,
             defaultValue,
             deprecationReason,
             description,
             extensions,
-            name: argName,
             type,
-          });
+          };
         }
       },
     );
   }
 
-  return directive;
+  return new GraphQLDirective(directiveConfig);
 };
 
 export const getDirectiveDeclaration = (
@@ -182,7 +189,7 @@ export const getDirectiveDeclaration = (
 abstract class EasyDirectiveVisitor<
   TArgs extends object,
   TContext extends object,
-> extends SchemaDirectiveVisitor<TArgs, TContext> {
+> {
   args: TArgs;
 
   /**
@@ -302,9 +309,65 @@ abstract class EasyDirectiveVisitor<
   ): DocumentNode[] {
     const unknownTypes: GraphQLNamedType[] = [];
     this.commonTypes.forEach(type =>
+      // @ts-expect-error (FIXME: type is not assignable)
       collectUnknownNamedTypes(schema, type, unknownTypes),
     );
     return unknownTypes.map(type => gql(printType(type)));
+  }
+
+  /* eslint-disable class-methods-use-this, class-methods-use-this, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+  // istanbul ignore next (should be overridden and never reached)
+  public visitArgumentDefinition(
+    argument: GraphQLArgument,
+    { field }: { field: GraphQLField<unknown, unknown, any> },
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitInputObject(object: GraphQLInputObjectType): void {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitInputFieldDefinition(
+    field: GraphQLInputField,
+    { objectType }: { objectType: GraphQLInputObjectType },
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitFieldDefinition(
+    field: GraphQLFieldConfig<unknown, TContext, TArgs>,
+    { objectType }: { objectType: GraphQLObjectType<any, any> },
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitObject(
+    object: GraphQLInterfaceType | GraphQLObjectType<any, any>,
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitQuery(
+    query: GraphQLObjectType<any, TContext>,
+    schema: GraphQLSchema,
+    directiveName: string,
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+  /* eslint-enable class-methods-use-this, class-methods-use-this, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+
+  public applyToSchema(schema: GraphQLSchema): GraphQLSchema {
+    const mapper = createSchemaMapperForVisitor(
+      (this.constructor as typeof EasyDirectiveVisitor).defaultName,
+      this,
+    );
+    return mapper(schema);
   }
 }
 

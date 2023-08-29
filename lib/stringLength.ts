@@ -1,11 +1,11 @@
 import { GraphQLFloat } from 'graphql';
-import { ValidationError } from 'apollo-server-errors';
 
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
 } from './ValidateDirectiveVisitor';
 import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
+import ValidationError from './errors/ValidationError';
 
 const createValidateMinMax = (min: number, max: number): ValidateFunction => {
   if (min < 0) throw new RangeError('@stringLength(min) must be at least 0');

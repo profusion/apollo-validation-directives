@@ -56,6 +56,7 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
 
     public static readonly defaultName = defaultName;
 
+    // eslint-disable-next-line class-methods-use-this
     public getValidationForArgs(): ValidateFunction | undefined {
       const validate = createValidate(this.args);
       if (
@@ -64,7 +65,7 @@ const createValidateDirectiveVisitor = <TArgs extends ValidationDirectiveArgs>({
       ) {
         Object.defineProperty(validate, 'validateProperties', {
           value: {
-            args: this.args as ValidationDirectiveArgs,
+            args: this.args,
             directive: defaultName,
           },
           writable: false,

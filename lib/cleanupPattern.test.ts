@@ -2,7 +2,7 @@ import type { GraphQLSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import cleanupPattern from './cleanupPattern';
+import CleanupPattern from './cleanupPattern';
 import capitalize from './capitalize';
 
 import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
@@ -23,13 +23,10 @@ const createSchema = ({
   name,
   testCase: { directiveArgs },
 }: CreateSchemaConfig<RootValue>): GraphQLSchema =>
-  cleanupPattern.addValidationResolversToSchema(
+  new CleanupPattern().applyToSchema(
     makeExecutableSchema({
-      schemaDirectives: {
-        [name]: cleanupPattern,
-      },
       typeDefs: [
-        ...cleanupPattern.getTypeDefs(name, undefined, true, true),
+        ...CleanupPattern.getTypeDefs(name, undefined, true, true),
         gql`
                 type Query {
                   test: String @${name}${directiveArgs}
@@ -52,7 +49,7 @@ const noNumbers = 'No Numbers';
 
 testEasyDirective({
   createSchema,
-  DirectiveVisitor: cleanupPattern,
+  DirectiveVisitor: CleanupPattern,
   expectedArgsTypeDefs: `\
 (
   flags: String

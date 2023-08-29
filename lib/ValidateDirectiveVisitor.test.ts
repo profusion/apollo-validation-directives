@@ -14,11 +14,10 @@ import {
   GraphQLList,
   GraphQLNonNull,
 } from 'graphql';
-import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ValidationError } from 'apollo-server-errors';
 
+import print from './utils/printer';
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
@@ -30,6 +29,8 @@ import {
 } from './test-utils.test';
 
 import capitalize from './capitalize';
+import ValidationError from './errors/ValidationError';
+import createSchemaMapperForVisitor from './createSchemaMapperForVisitor';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];
@@ -54,7 +55,9 @@ describe('ValidateDirectiveVisitorNonTyped', (): void => {
 
   const commonTypeDefs = [
     `\
-"""type of the list entry given as \`validationErrors\` argument that is injected into every field resolver with validated arguments"""
+"""
+type of the list entry given as \`validationErrors\` argument that is injected into every field resolver with validated arguments
+"""
 input ValidatedInputError {
   """The error/exception message that caused the validation error"""
   message: String!
@@ -120,6 +123,8 @@ type ValidatedInputErrorOutput {
 
   describe('Throw policy', (): void => {
     class TestDirective extends ValidateDirectiveVisitorNonTyped {
+      public static defaultName: string = 'testDirective';
+
       // eslint-disable-next-line class-methods-use-this
       public getValidationForArgs(): ValidateFunction {
         const validate = (): void => {
@@ -135,37 +140,33 @@ type ValidatedInputErrorOutput {
         return validate;
       }
     }
-    const schema =
-      ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
-        makeExecutableSchema({
-          resolvers: {
-            Query: {
-              argShouldFail: (): boolean => true,
-              failInput: (): boolean => true,
-              failInputField: (): boolean => true,
-            },
+    const schema = new TestDirective().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Query: {
+            argShouldFail: (): boolean => true,
+            failInput: (): boolean => true,
+            failInputField: (): boolean => true,
           },
-          schemaDirectives: {
-            testDirective: TestDirective,
-          },
-          typeDefs: [
-            ...basicTypeDefs,
-            gql`
-              input FailInput @testDirective(policy: THROW) {
-                n: Int
-              }
-              input FailInputField {
-                n: Int @testDirective(policy: THROW)
-              }
-              type Query {
-                argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
-                failInput(input: FailInput): Boolean!
-                failInputField(input: FailInputField): Boolean!
-              }
-            `,
-          ],
-        }),
-      );
+        },
+        typeDefs: [
+          ...basicTypeDefs,
+          gql`
+            input FailInput @testDirective(policy: THROW) {
+              n: Int
+            }
+            input FailInputField {
+              n: Int @testDirective(policy: THROW)
+            }
+            type Query {
+              argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
+              failInput(input: FailInput): Boolean!
+              failInputField(input: FailInputField): Boolean!
+            }
+          `,
+        ],
+      }),
+    );
 
     it('should fail on args', async (): Promise<void> => {
       const source = print(gql`
@@ -173,29 +174,23 @@ type ValidatedInputErrorOutput {
           argShouldFail(arg: 1)
         }
       `);
-      const result = await graphql(schema, source);
+      const result = await graphql({ schema, source });
+      const expectedError = new ValidationError('Validation error');
+      expectedError.extensions.validation = {
+        path: ['arg'],
+        properties: {
+          args: {
+            policy: 'THROW',
+            validate: true,
+          },
+          directive: 'testThrowPolicyValidate',
+        },
+      };
+      expectedError.locations = [{ column: 3, line: 2 }];
+      expectedError.path = ['argShouldFail'];
       expect(result).toEqual({
         data: null,
-        errors: [
-          {
-            extensions: {
-              code: 'GRAPHQL_VALIDATION_FAILED',
-              validation: {
-                path: ['arg'],
-                properties: {
-                  args: {
-                    policy: 'THROW',
-                    validate: true,
-                  },
-                  directive: 'testThrowPolicyValidate',
-                },
-              },
-            },
-            locations: [{ column: 3, line: 2 }],
-            message: 'Validation error',
-            path: ['argShouldFail'],
-          },
-        ],
+        errors: [expectedError],
       });
     });
 
@@ -205,29 +200,23 @@ type ValidatedInputErrorOutput {
           failInputField(input: { n: 2 })
         }
       `);
-      const result = await graphql(schema, source);
+      const result = await graphql({ schema, source });
+      const expectedError = new ValidationError('Validation error');
+      expectedError.extensions.validation = {
+        path: ['input', 'n'],
+        properties: {
+          args: {
+            policy: 'THROW',
+            validate: true,
+          },
+          directive: 'testThrowPolicyValidate',
+        },
+      };
+      expectedError.locations = [{ column: 3, line: 2 }];
+      expectedError.path = ['failInputField'];
       expect(result).toEqual({
         data: null,
-        errors: [
-          {
-            extensions: {
-              code: 'GRAPHQL_VALIDATION_FAILED',
-              validation: {
-                path: ['input', 'n'],
-                properties: {
-                  args: {
-                    policy: 'THROW',
-                    validate: true,
-                  },
-                  directive: 'testThrowPolicyValidate',
-                },
-              },
-            },
-            locations: [{ column: 3, line: 2 }],
-            message: 'Validation error',
-            path: ['failInputField'],
-          },
-        ],
+        errors: [expectedError],
       });
     });
 
@@ -237,38 +226,36 @@ type ValidatedInputErrorOutput {
           failInput(input: { n: 2 })
         }
       `);
-      const result = await graphql(schema, source);
+      const result = await graphql({ schema, source });
+      const expectedError = new ValidationError('Validation error');
+      expectedError.extensions.validation = {
+        path: ['input', 'n'],
+        properties: {
+          args: {
+            policy: 'THROW',
+            validate: true,
+          },
+          directive: 'testThrowPolicyValidate',
+        },
+      };
+      expectedError.locations = [{ column: 3, line: 2 }];
+      expectedError.path = ['failInput'];
       expect(result).toEqual({
         data: null,
-        errors: [
-          {
-            extensions: {
-              code: 'GRAPHQL_VALIDATION_FAILED',
-              validation: {
-                path: ['input', 'n'],
-                properties: {
-                  args: {
-                    policy: 'THROW',
-                    validate: true,
-                  },
-                  directive: 'testThrowPolicyValidate',
-                },
-              },
-            },
-            locations: [{ column: 3, line: 2 }],
-            message: 'Validation error',
-            path: ['failInput'],
-          },
-        ],
+        errors: [expectedError],
       });
     });
   });
 
   describe('basic behavior works', (): void => {
-    const mockValidate = jest.fn(x => x);
+    const mockValidate = jest.fn(x => {
+      return x;
+    });
     const mockResolver = jest.fn((_, { arg }): object => arg);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     class TestDirective extends ValidateDirectiveVisitorNonTyped {
+      public static defaultName = 'testDirective';
+
       public static readonly config = {
         ...ValidateDirectiveVisitorNonTyped.config,
         args: {
@@ -280,10 +267,9 @@ type ValidatedInputErrorOutput {
         },
       };
 
+      // eslint-disable-next-line class-methods-use-this
       public getValidationForArgs(): ValidateFunction | undefined {
-        return (this.args as TestDirectiveArgs).validate
-          ? mockValidate
-          : undefined;
+        return this.args.validate ? mockValidate : undefined;
       }
     }
 
@@ -309,30 +295,28 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
       // these are simpler to validate since the GraphQL framework will handle
       // exceptions and all.
-      const schema = makeExecutableSchema({
-        resolvers: {
-          Query: {
-            notValidated: mockResolver,
-            validated: mockResolver,
-            validatedModifiers: mockResolver,
+      const schema = new TestDirective().applyToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              notValidated: mockResolver,
+              validated: mockResolver,
+              validatedModifiers: mockResolver,
+            },
           },
-        },
-        schemaDirectives: {
-          testDirective: TestDirective,
-        },
-        typeDefs: [
-          ...basicTypeDefs,
-          gql`
-            type Query {
-              notValidated(arg: Int): Int @${name}(validate: false)
-              validated(arg: Int): Int @${name}(validate: true)
-              validatedModifiers(arg: [Int]!): [Int] @${name}
-              defaultResolver(arg: Int!): Int @${name}
-            }
-          `,
-        ],
-      });
-      const QueryType = schema.getType('Query') as GraphQLObjectType;
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
+              type Query {
+                notValidated(arg: Int): Int @${name}(validate: false)
+                validated(arg: Int): Int @${name}(validate: true)
+                validatedModifiers(arg: [Int]!): [Int] @${name}
+                defaultResolver(arg: Int!): Int @${name}
+              }
+            `,
+          ],
+        }),
+      );
 
       beforeEach((): void => {
         mockResolver.mockClear();
@@ -342,7 +326,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       });
 
       const value = 1234;
-      const context = { theContext: 1234 };
+      const contextValue = { theContext: 1234 };
 
       it('calls directive if validated', async (): Promise<void> => {
         const source = print(gql`
@@ -350,7 +334,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           validated(arg: ${value})
         }
       `);
-        const result = await graphql(schema, source, undefined, context);
+        const result = await graphql({
+          contextValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { validated: value * 2 },
         });
@@ -358,8 +346,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           value,
           GraphQLInt,
-          QueryType,
-          context,
+          schema.getType('Query') as GraphQLObjectType,
+          contextValue,
           expect.any(Object),
           undefined,
           { arg: value },
@@ -373,12 +361,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             defaultResolver(arg: ${value})
           }
         `);
-        const result = await graphql(
+        const result = await graphql({
+          contextValue,
+          rootValue: { defaultResolver: 42 },
           schema,
           source,
-          { defaultResolver: 42 },
-          context,
-        );
+        });
         expect(result).toEqual({
           data: { defaultResolver: 42 * 2 },
         });
@@ -386,8 +374,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           42,
           GraphQLInt,
-          QueryType,
-          context,
+          expect.any(Object),
+          contextValue,
           expect.any(Object),
           { defaultResolver: 42 },
           { arg: value },
@@ -404,7 +392,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         mockValidate.mockImplementationOnce((): void => {
           throw new ValidationError('forced error');
         });
-        const result = await graphql(schema, source, undefined, context);
+        const result = await graphql({
+          contextValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { validated: null },
           errors: [new ValidationError('forced error')],
@@ -413,8 +405,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           value,
           GraphQLInt,
-          QueryType,
-          context,
+          expect.any(Object),
+          contextValue,
           expect.any(Object),
           undefined,
           { arg: value },
@@ -430,7 +422,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         `);
         mockValidate.mockReset();
         mockValidate.mockImplementationOnce((): undefined => undefined);
-        const result = await graphql(schema, source, undefined, context);
+        const result = await graphql({
+          contextValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { validated: null },
           errors: [new ValidationError('validation returned undefined')],
@@ -439,8 +435,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           value,
           GraphQLInt,
-          QueryType,
-          context,
+          expect.any(Object),
+          contextValue,
           expect.any(Object),
           undefined,
           { arg: value },
@@ -465,7 +461,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         mockValidate.mockImplementationOnce((v: (number | null)[]) =>
           v.map(x => (x === null ? x : x * 2)),
         );
-        const result = await graphql(schema, source, undefined, context);
+        const result = await graphql({
+          contextValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { validatedModifiers: [value * 2, 42 * 2, null] },
         });
@@ -473,8 +473,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           [value, 42, null],
           GraphQLIntList,
-          QueryType,
-          context,
+          expect.any(Object),
+          contextValue,
           expect.any(Object),
           undefined,
           { arg: [value, 42, null] },
@@ -488,7 +488,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           notValidated(arg: ${value})
         }
       `);
-        const result = await graphql(schema, source, undefined, context);
+        const result = await graphql({
+          contextValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { notValidated: value },
         });
@@ -505,30 +509,29 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       // exceptions and all.
       // This just checks if the field is automatically wrapped, trust
       // 'field directives' works properly for the details
-      const schema = makeExecutableSchema({
-        schemaDirectives: {
-          [name]: TestDirective,
-        },
-        typeDefs: [
-          ...basicTypeDefs,
-          gql`
-            type AllValidated @${name} {
-              value: Int
-            }
-            type AllNotValidated @${name}(validate: false) {
-              value: Int
-            }
-            type Query {
-              allValidated: AllValidated
-              allNotValidated: AllNotValidated
-            }
-          `,
-        ],
-      });
+      const schema = new TestDirective().applyToSchema(
+        makeExecutableSchema({
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
+              type AllValidated @${name} {
+                value: Int
+              }
+              type AllNotValidated @${name}(validate: false) {
+                value: Int
+              }
+              type Query {
+                allValidated: AllValidated
+                allNotValidated: AllNotValidated
+              }
+            `,
+          ],
+        }),
+      );
       const AllValidatedType = schema.getType(
         'AllValidated',
       ) as GraphQLObjectType;
-      const context = { theContext: 63 };
+      const contextValue = { theContext: 63 };
 
       const rootValue = {
         allNotValidated: { value: 34 },
@@ -548,7 +551,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             }
           }
         `);
-        const result = await graphql(schema, source, rootValue, context);
+        const result = await graphql({
+          contextValue,
+          rootValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { allValidated: { value: rootValue.allValidated.value * 2 } },
         });
@@ -557,7 +565,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           12,
           GraphQLInt,
           AllValidatedType,
-          context,
+          contextValue,
           expect.any(Object),
           { value: 12 },
           {},
@@ -573,7 +581,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         `);
         mockValidate.mockClear();
-        const result = await graphql(schema, source, rootValue, context);
+        const result = await graphql({
+          contextValue,
+          rootValue,
+          schema,
+          source,
+        });
         expect(result).toEqual({
           data: { allNotValidated: rootValue.allNotValidated },
         });
@@ -587,79 +600,87 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
       // these are trickier to test since there is nothing doing the
       // validation for us prior to call the final resolver
-      const schema = makeExecutableSchema({
-        resolvers: {
-          Query: {
-            alsoNotValidated: mockResolver,
-            deepNonNullable: (
-              _,
-              { arg },
-              __,
-              { validationErrors }: ValidationErrorsResolverInfo,
-            ): unknown => {
-              const { nonNullable } = (arg || [])[0] || {};
-              return { nonNullable, validationErrors };
+      const anotherDirectiveMapper = createSchemaMapperForVisitor(
+        'anotherDirective',
+        new TestDirective(),
+      );
+      const testDirectiveMapper = createSchemaMapperForVisitor(
+        name,
+        new TestDirective(),
+      );
+      const schema = anotherDirectiveMapper(
+        testDirectiveMapper(
+          makeExecutableSchema({
+            resolvers: {
+              Query: {
+                alsoNotValidated: mockResolver,
+                deepNonNullable: (
+                  _,
+                  { arg },
+                  __,
+                  { validationErrors }: ValidationErrorsResolverInfo,
+                ): unknown => {
+                  const { nonNullable } = (arg || [])[0] || {};
+                  return { nonNullable, validationErrors };
+                },
+                doubleValidation: mockResolver,
+                manyArgsValidated: mockResolver,
+                nonNullable: mockResolver,
+                nonNullableEnum: mockResolver,
+                nonNullableListOfNonNullable: mockResolver,
+                nonNullableListOfNullable: mockResolver,
+                notValidated: mockResolver,
+                nullable: mockResolver,
+                nullableListOfNullable: mockResolver,
+                someArgsNotValidated: mockResolver,
+              },
             },
-            doubleValidation: mockResolver,
-            manyArgsValidated: mockResolver,
-            nonNullable: mockResolver,
-            nonNullableEnum: mockResolver,
-            nonNullableListOfNonNullable: mockResolver,
-            nonNullableListOfNullable: mockResolver,
-            notValidated: mockResolver,
-            nullable: mockResolver,
-            nullableListOfNullable: mockResolver,
-            someArgsNotValidated: mockResolver,
-          },
-        },
-        schemaDirectives: {
-          anotherDirective: TestDirective,
-          [name]: TestDirective,
-        },
-        typeDefs: [
-          ...basicTypeDefs,
-          gql`
-            type DeepNonNullable {
-              nonNullable: Int # mirror the name, but type is nullable
-              validationErrors: [ValidatedInputErrorOutput!]
-            }
-            input DeepNonNullableInput {
-              nonNullable: Int!
-            }
-            enum MyEnum {
-              someOption
-              anotherOption
-            }
-            type Query {
-              nonNullable(arg: Int! @${name}): Int
-              nonNullableEnum(arg: MyEnum! @${name}): MyEnum
-              nonNullableListOfNonNullable(arg: [Int!]! @${name}): [Int]
-              nonNullableListOfNullable(arg: [Int]! @${name}): [Int]
-              nullable(arg: Int @${name}): Int
-              nullableListOfNullable(arg: [Int] @${name}): [Int]
-              notValidated(arg: Int): Int
-              alsoNotValidated(arg: Int! @${name}(validate: false)): Int
-              defaultResolver(arg: Int @${name}): Int
-              someArgsNotValidated(
-                arg: Int @${name}
-                notValidated: Int
-              ): Int
-              manyArgsValidated(
-                arg: Int @${name}
-                alsoValidated: Int @${name}
-              ): Int
-              deepNonNullable(
-                arg: [DeepNonNullableInput!] @${name}
-              ): DeepNonNullable
-              doubleValidation(arg: Int @${name} @anotherDirective): Int
-            }
-          `,
-        ],
-      });
+            typeDefs: [
+              ...basicTypeDefs,
+              gql`
+                type DeepNonNullable {
+                  nonNullable: Int # mirror the name, but type is nullable
+                  validationErrors: [ValidatedInputErrorOutput!]
+                }
+                input DeepNonNullableInput {
+                  nonNullable: Int!
+                }
+                enum MyEnum {
+                  someOption
+                  anotherOption
+                }
+                type Query {
+                  nonNullable(arg: Int! @${name}): Int
+                  nonNullableEnum(arg: MyEnum! @${name}): MyEnum
+                  nonNullableListOfNonNullable(arg: [Int!]! @${name}): [Int]
+                  nonNullableListOfNullable(arg: [Int]! @${name}): [Int]
+                  nullable(arg: Int @${name}): Int
+                  nullableListOfNullable(arg: [Int] @${name}): [Int]
+                  notValidated(arg: Int): Int
+                  alsoNotValidated(arg: Int! @${name}(validate: false)): Int
+                  defaultResolver(arg: Int @${name}): Int
+                  someArgsNotValidated(
+                    arg: Int @${name}
+                    notValidated: Int
+                  ): Int
+                  manyArgsValidated(
+                    arg: Int @${name}
+                    alsoValidated: Int @${name}
+                  ): Int
+                  deepNonNullable(
+                    arg: [DeepNonNullableInput!] @${name}
+                  ): DeepNonNullable
+                  doubleValidation(arg: Int @${name} @anotherDirective): Int
+                }
+              `,
+            ],
+          }),
+        ),
+      );
       const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const value = 1234;
-      const context = { theContext: 468 };
+      const contextValue = { theContext: 468 };
 
       describe('argument directives work with valid input', (): void => {
         beforeEach((): void => {
@@ -675,7 +696,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nonNullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullable: value },
           });
@@ -683,8 +708,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLNonNullInt,
-            getFieldArg(QueryType, 'nonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -701,8 +730,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               nonNullable(arg: $value)
             }
           `);
-          const result = await graphql(schema, source, undefined, context, {
-            value,
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+            variableValues: { value },
           });
           expect(result).toEqual({
             data: { nonNullable: value },
@@ -711,8 +743,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLNonNullInt,
-            getFieldArg(QueryType, 'nonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -727,7 +763,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               nonNullableEnum(arg: someOption)
             }
           `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableEnum: 'someOption' },
           });
@@ -735,8 +775,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
-            getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: 'someOption' },
@@ -751,7 +795,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nonNullableListOfNonNullable(arg: [${value}, 42])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: [value, 42] },
           });
@@ -759,8 +807,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
-            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
@@ -775,7 +827,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nonNullableListOfNullable(arg: [null, ${value}])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableListOfNullable: [null, value] },
           });
@@ -783,8 +839,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [null, value],
             GraphQLNonNullIntList,
-            getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [null, value] },
@@ -799,7 +859,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullable: value },
           });
@@ -807,8 +871,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'nullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -823,7 +891,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               nullable(arg: null)
             }
           `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullable: null },
           });
@@ -831,8 +903,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             null,
             GraphQLInt,
-            getFieldArg(QueryType, 'nullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: null },
@@ -847,7 +923,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nullableListOfNullable(arg: [${value}, null])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullableListOfNullable: [value, null] },
           });
@@ -855,8 +935,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [value, null],
             GraphQLIntList,
-            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [value, null] },
@@ -871,7 +955,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               nullableListOfNullable(arg: null)
             }
           `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
@@ -879,8 +967,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             null,
             GraphQLIntList,
-            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: null },
@@ -895,7 +987,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             notValidated(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { notValidated: value },
           });
@@ -909,7 +1005,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             alsoNotValidated(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { alsoNotValidated: value },
           });
@@ -923,7 +1023,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             someArgsNotValidated(arg: ${value}, notValidated: 12)
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { someArgsNotValidated: value },
           });
@@ -931,8 +1035,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value, notValidated: 12 },
@@ -947,7 +1055,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { manyArgsValidated: value },
           });
@@ -955,8 +1067,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -965,8 +1081,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -987,7 +1107,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               }
             }
           `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: {
               deepNonNullable: {
@@ -1004,8 +1128,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 schema.getType('DeepNonNullableInput') as GraphQLInputType,
               ),
             ),
-            getFieldArg(QueryType, 'deepNonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'deepNonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [{ nonNullable: 1 }] },
@@ -1021,12 +1149,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             defaultResolver(arg: ${value})
           }
         `);
-          const result = await graphql(
+          const result = await graphql({
+            contextValue,
+            rootValue: { defaultResolver: 42 },
             schema,
             source,
-            { defaultResolver: 42 },
-            context,
-          );
+          });
           expect(result).toEqual({
             data: { defaultResolver: 42 },
           });
@@ -1034,8 +1162,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'defaultResolver', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'defaultResolver', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             { defaultResolver: 42 },
             { arg: value },
@@ -1051,7 +1183,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementation(x => x * 2);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
+          const query = schema.getType('Query') as GraphQLObjectType;
           expect(result).toEqual({
             data: { doubleValidation: value * 4 },
           });
@@ -1059,8 +1196,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'doubleValidation', 'arg'),
-            context,
+            {
+              ...getFieldArg(query, 'doubleValidation', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -1069,11 +1210,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value * 2,
             GraphQLInt,
-            getFieldArg(QueryType, 'doubleValidation', 'arg'),
-            context,
+            {
+              ...getFieldArg(query, 'doubleValidation', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
-            { arg: value },
+            { arg: value * 2 },
             ['arg'],
           );
           expect(mockResolver).toBeCalledTimes(1);
@@ -1104,7 +1249,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               nonNullable(arg: ${value})
             }
           `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
@@ -1113,8 +1262,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLNonNullInt,
-            getFieldArg(QueryType, 'nonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -1131,7 +1284,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): void => undefined);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('validation returned undefined')],
@@ -1140,8 +1297,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLNonNullInt,
-            getFieldArg(QueryType, 'nonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -1158,7 +1319,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): object => ({ bug: 1 }));
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [
@@ -1171,8 +1336,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLNonNullInt,
-            getFieldArg(QueryType, 'nonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -1189,7 +1358,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementationOnce((): string => 'invalidValue');
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableEnum: null },
             errors: [
@@ -1202,8 +1375,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
-            getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: 'someOption' },
@@ -1218,7 +1395,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nonNullableListOfNonNullable(arg: [${value}, 42])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
@@ -1227,8 +1408,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
-            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
@@ -1245,7 +1430,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           `);
           mockValidate.mockReset();
           mockValidate.mockImplementation((): null[] => [null]);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: null }, // only arg is non-nullable!
             errors: [
@@ -1256,8 +1445,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
-            getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [value, 42] },
@@ -1272,7 +1465,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nonNullableListOfNullable(arg: [null, ${value}])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nonNullableListOfNullable: null },
             errors: [new ValidationError('forced error')],
@@ -1281,8 +1478,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [null, value],
             GraphQLNonNullIntList,
-            getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [null, value] },
@@ -1297,7 +1498,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nullable(arg: ${value})
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullable: null },
           });
@@ -1305,8 +1510,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'nullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value },
@@ -1318,7 +1527,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             {
               arg: null,
             },
-            context,
+            contextValue,
             expect.objectContaining({
               validationErrors,
             }),
@@ -1331,7 +1540,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             nullableListOfNullable(arg: [${value}, null])
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
@@ -1339,8 +1552,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             [value, null],
             GraphQLIntList,
-            getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'nullableListOfNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [value, null] },
@@ -1352,7 +1569,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             {
               arg: null,
             },
-            context,
+            contextValue,
             expect.objectContaining({ validationErrors }),
           );
         });
@@ -1363,7 +1580,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             someArgsNotValidated(arg: ${value}, notValidated: 12)
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { someArgsNotValidated: null },
           });
@@ -1371,8 +1592,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'someArgsNotValidated', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: value, notValidated: 12 },
@@ -1385,7 +1610,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               arg: null,
               notValidated: 12,
             },
-            context,
+            contextValue,
             expect.objectContaining({ validationErrors }),
           );
         });
@@ -1396,7 +1621,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             manyArgsValidated(arg: ${value}, alsoValidated: 12)
           }
         `);
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
@@ -1404,8 +1633,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -1414,8 +1647,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -1428,7 +1665,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               alsoValidated: 12, // mockImplementationOnce() so only first fails
               arg: null,
             },
-            context,
+            contextValue,
             expect.objectContaining({ validationErrors }),
           );
         });
@@ -1442,7 +1679,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           mockValidate.mockImplementationOnce((): void => {
             throw new ValidationError('other error');
           });
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
@@ -1450,8 +1691,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             value,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -1460,8 +1705,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toBeCalledWith(
             12,
             GraphQLInt,
-            getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'manyArgsValidated', 'alsoValidated'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { alsoValidated: 12, arg: value },
@@ -1474,7 +1723,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               alsoValidated: null,
               arg: null,
             },
-            context,
+            contextValue,
             expect.objectContaining({
               validationErrors: [
                 ...validationErrors,
@@ -1505,7 +1754,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             // force deep failure, this must force the element to become null
             (): object => [{ nonNullable: null }],
           );
-          const result = await graphql(schema, source, undefined, context);
+          const result = await graphql({
+            contextValue,
+            schema,
+            source,
+          });
           expect(result).toEqual({
             data: {
               deepNonNullable: {
@@ -1527,8 +1780,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 schema.getType('DeepNonNullableInput') as GraphQLInputType,
               ),
             ),
-            getFieldArg(QueryType, 'deepNonNullable', 'arg'),
-            context,
+            {
+              ...getFieldArg(QueryType, 'deepNonNullable', 'arg'),
+              policy: 'RESOLVER',
+              validation: expect.any(Function),
+            },
+            contextValue,
             expect.any(Object),
             undefined,
             { arg: [{ nonNullable: 1 }] },
@@ -1545,6 +1802,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     const mockValidate = jest.fn(x => x);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     class TestDirective extends ValidateDirectiveVisitorNonTyped {
+      static defaultName = name;
+
       public static readonly config = {
         ...ValidateDirectiveVisitorNonTyped.config,
         args: {
@@ -1559,10 +1818,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
         false;
 
+      // eslint-disable-next-line class-methods-use-this
       public getValidationForArgs(): ValidateFunction | undefined {
-        return (this.args as TestDirectiveArgs).validate
-          ? mockValidate
-          : undefined;
+        return this.args.validate ? mockValidate : undefined;
       }
     }
 
@@ -1573,34 +1831,30 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     // exceptions and all.
     // This just checks if the field is automatically wrapped, trust
     // 'field directives' works properly for the details
-    const schema = makeExecutableSchema({
-      schemaDirectives: {
-        [name]: TestDirective,
-      },
-      typeDefs: [
-        ...basicTypeDefs,
-        gql`
-            type AllValidated @${name} {
-              value: Int
-            }
-            type FieldValidated {
-              validatedField: Int @${name}
-              notValidatedField: Int
-            }
-            type Query {
-              allValidated: AllValidated
-              fieldValidated: FieldValidated
-            }
-          `,
-      ],
-    });
+    const schema = new TestDirective().applyToSchema(
+      makeExecutableSchema({
+        typeDefs: [
+          ...basicTypeDefs,
+          gql`
+              type AllValidated @${name} {
+                value: Int
+              }
+              type FieldValidated {
+                validatedField: Int @${name}
+                notValidatedField: Int
+              }
+              type Query {
+                allValidated: AllValidated
+                fieldValidated: FieldValidated
+              }
+            `,
+        ],
+      }),
+    );
     const AllValidatedType = schema.getType(
       'AllValidated',
     ) as GraphQLObjectType;
-    const FieldValidatedType = schema.getType(
-      'FieldValidated',
-    ) as GraphQLObjectType;
-    const context = { theContext: 63 };
+    const contextValue = { theContext: 63 };
 
     const rootValue = {
       allValidated: { value: 12 },
@@ -1620,7 +1874,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         }
       `);
-      const result = await graphql(schema, source, rootValue, context);
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: { allValidated: { value: rootValue.allValidated.value } },
       });
@@ -1629,7 +1888,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         undefined,
         GraphQLInt,
         AllValidatedType,
-        context,
+        contextValue,
         expect.any(Object),
         rootValue.allValidated,
         {},
@@ -1645,7 +1904,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         }
       `);
-      const result = await graphql(schema, source, rootValue, context);
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: { fieldValidated: { ...rootValue.fieldValidated } },
       });
@@ -1653,8 +1917,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         undefined,
         GraphQLInt,
-        FieldValidatedType,
-        context,
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         rootValue.fieldValidated,
         {},
@@ -1678,6 +1942,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     class TestDirective extends ValidateDirectiveVisitorNonTyped {
+      public static defaultName = name;
+
       public static readonly config = {
         ...ValidateDirectiveVisitorNonTyped.config,
         args: {
@@ -1691,9 +1957,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       };
 
       public getValidationForArgs(): ValidateFunction | undefined {
-        return (this.args as TestDirectiveArgs).validate
-          ? mockValidate
-          : undefined;
+        return this.args.validate ? mockValidate : undefined;
       }
     }
 
@@ -1708,20 +1972,16 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     // do MUST USE addValidationResolversToSchema()!
 
     it('works with deepNonNullable', async (): Promise<void> => {
-      const schema =
-        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
-          makeExecutableSchema({
-            resolvers: {
-              Query: {
-                deepNonNullable: mockResolver,
-              },
+      const schema = new TestDirective().applyToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              deepNonNullable: mockResolver,
             },
-            schemaDirectives: {
-              [name]: TestDirective,
-            },
-            typeDefs: [
-              ...basicTypeDefs,
-              gql`
+          },
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
               type DeepNonNullableEntry {
                 nonNullable: Int # match the input name, but is nullable to make tests easier
                 notValidated: Int
@@ -1740,9 +2000,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): DeepNonNullableResult
               }
             `,
-            ],
-          }),
-        );
+          ],
+        }),
+      );
 
       const source = print(gql`
         query {
@@ -1758,9 +2018,13 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         }
       `);
-      const context = { theContext: 128 };
+      const contextValue = { theContext: 128 };
 
-      const result = await graphql(schema, source, undefined, context);
+      const result = await graphql({
+        contextValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: {
           deepNonNullable: {
@@ -1773,8 +2037,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         value,
         GraphQLNonNullInt,
-        schema.getType('DeepNonNullableInput'),
-        context,
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         undefined,
         { arg: [{ nonNullable: value, notValidated: 42 }] },
@@ -1784,20 +2048,16 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     it('works with deepNullable', async (): Promise<void> => {
-      const schema =
-        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
-          makeExecutableSchema({
-            resolvers: {
-              Query: {
-                deepNullable: mockResolver,
-              },
+      const schema = new TestDirective().applyToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              deepNullable: mockResolver,
             },
-            schemaDirectives: {
-              [name]: TestDirective,
-            },
-            typeDefs: [
-              ...basicTypeDefs,
-              gql`
+          },
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
               type DeepNullableEntry {
                 nullable: Int
               }
@@ -1835,9 +2095,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): DeepNullableResult
               }
             `,
-            ],
-          }),
-        );
+          ],
+        }),
+      );
       const QueryType = schema.getType('Query') as GraphQLObjectType;
 
       const source = print(gql`
@@ -1853,11 +2113,15 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         }
       `);
-      const context = { theContext: 256 };
+      const contextValue = { theContext: 256 };
 
       mockValidate.mockClear();
       mockResolver.mockClear();
-      const result = await graphql(schema, source, undefined, context);
+      const result = await graphql({
+        contextValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: {
           deepNullable: {
@@ -1870,8 +2134,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         value,
         GraphQLInt,
-        schema.getType('DeepNullableInput'),
-        context,
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         undefined,
         {
@@ -1883,8 +2147,12 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         { list: [1] },
         schema.getType('NoValidatedFields') as GraphQLInputType,
-        getFieldArg(QueryType, 'deepNullable', 'other'),
-        context,
+        {
+          ...getFieldArg(QueryType, 'deepNullable', 'other'),
+          policy: 'RESOLVER',
+          validation: expect.any(Function),
+        },
+        contextValue,
         expect.any(Object),
         undefined,
         {
@@ -1897,21 +2165,16 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
 
     it('works with double validation', async (): Promise<void> => {
-      const schema =
-        ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
-          makeExecutableSchema({
-            resolvers: {
-              Query: {
-                test: mockResolver,
-              },
+      const schema = new TestDirective().applyToSchema(
+        makeExecutableSchema({
+          resolvers: {
+            Query: {
+              test: mockResolver,
             },
-            schemaDirectives: {
-              anotherDirective: TestDirective,
-              [name]: TestDirective,
-            },
-            typeDefs: [
-              ...basicTypeDefs,
-              gql`
+          },
+          typeDefs: [
+            ...basicTypeDefs,
+            gql`
               type TestOutput {
                 value: Int
               }
@@ -1930,10 +2193,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 ): Test
               }
             `,
-            ],
-          }),
-        );
-      const QueryType = schema.getType('Query') as GraphQLObjectType;
+          ],
+        }),
+      );
 
       const source = print(gql`
         query {
@@ -1948,7 +2210,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           }
         }
       `);
-      const context = { theContext: 1024 };
+      const contextValue = { theContext: 1024 };
 
       mockValidate.mockReset();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1958,7 +2220,11 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         return x;
       });
       mockResolver.mockClear();
-      const result = await graphql(schema, source, undefined, context);
+      const result = await graphql({
+        contextValue,
+        schema,
+        source,
+      });
       expect(result).toEqual({
         data: {
           test: {
@@ -1971,8 +2237,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         value,
         GraphQLInt,
-        schema.getType('TestInput') as GraphQLInputType,
-        context,
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         undefined,
         { arg: { value } },
@@ -1981,8 +2247,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(mockValidate).toBeCalledWith(
         value * 2,
         GraphQLInt,
-        schema.getType('TestInput'),
-        context,
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         undefined,
         { arg: { value } },
@@ -1990,9 +2256,9 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       );
       expect(mockValidate).toBeCalledWith(
         { value },
-        schema.getType('TestInput') as GraphQLInputType,
-        getFieldArg(QueryType, 'test', 'arg'),
-        context,
+        expect.any(Object),
+        expect.any(Object),
+        contextValue,
         expect.any(Object),
         undefined,
         { arg: { value } },
@@ -2007,29 +2273,26 @@ it('expects not to stack overflow on validation resolvers generation when input 
   const mockResolver = jest.fn((_, { arg }): object => arg);
 
   const generateSchemaWithRecursiveInput: () => GraphQLSchema = () =>
-    ValidateDirectiveVisitorNonTyped.addValidationResolversToSchema(
-      makeExecutableSchema({
-        resolvers: {
-          Mutation: {
-            mutationTest: mockResolver,
-          },
+    makeExecutableSchema({
+      resolvers: {
+        Mutation: {
+          mutationTest: mockResolver,
         },
-        schemaDirectives: {},
-        typeDefs: [
-          gql`
-            input TestInput {
-              a: TestInput
-              b: TestInput!
-              c: [TestInput]
-              d: [TestInput]!
-              e: [TestInput!]!
-            }
-            type Mutation {
-              mutationTest(input: TestInput!): String
-            }
-          `,
-        ],
-      }),
-    );
+      },
+      typeDefs: [
+        gql`
+          input TestInput {
+            a: TestInput
+            b: TestInput!
+            c: [TestInput]
+            d: [TestInput]!
+            e: [TestInput!]!
+          }
+          type Mutation {
+            mutationTest(input: TestInput!): String
+          }
+        `,
+      ],
+    });
   expect(generateSchemaWithRecursiveInput).not.toThrow();
 });
