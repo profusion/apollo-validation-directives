@@ -1443,15 +1443,15 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.9.1.tgz#96f606f8cd67fb018847d9b61e93997dabdefc72"
   integrity sha512-E6M6N0blf/jiZx8Q3nb0vNaswQeEyn0XlupO+xN6DtJ6r6IT4nXrTry7zhIfYvFCl3/8Cu6WIysmUBKiqV0bqQ==
 
+"@types/node@18.17.1":
+  version "18.17.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.17.1.tgz#84c32903bf3a09f7878c391d31ff08f6fe7d8335"
+  integrity sha512-xlR1jahfizdplZYRU59JlUx9uzF1ARa8jbhM11ccpCJya8kvos5jwdm2ZAgxSCwOl0fq21svP18EVwPBXMQudw==
+
 "@types/node@>=12":
   version "18.0.6"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.6.tgz#0ba49ac517ad69abe7a1508bc9b3a5483df9d5d7"
   integrity sha512-/xUq6H2aQm261exT6iZTMifUySEt4GR5KX8eYyY+C4MSNPqSh9oNIP7tz2GLKTlFaiBbgZNxffoR3CVRG+cljw==
-
-"@types/node@^14":
-  version "14.18.22"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.22.tgz#fd2a15dca290fc9ad565b672fde746191cd0c6e6"
-  integrity sha512-qzaYbXVzin6EPjghf/hTdIbnVW1ErMx8rPzwRNJhlbyJhu2SyqlvjGOY/tbUt6VFyzg56lROcOeSQRInpt63Yw==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
