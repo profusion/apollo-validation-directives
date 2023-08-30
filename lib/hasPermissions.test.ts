@@ -1323,6 +1323,88 @@ enum HasPermissionsDirectivePolicy {
     });
   });
 
+  describe('works on Mutations', () => {
+    const mutationMockResolver = jest.fn(() => {
+      return 'resolverReturn';
+    });
+
+    beforeEach((): void => {
+      mutationMockResolver.mockClear();
+    });
+
+    const schema = new HasPermissionsDirectiveVisitorNonTyped().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Mutation: {
+            testMutation: mutationMockResolver,
+          },
+          Query: {
+            dummyQuery: () => 0,
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+          type Query {
+            dummyQuery: Int
+          }
+          type Mutation {
+            testMutation: String @${name}(permissions: ["${permissionX}", "${permissionY}"])
+          }
+        `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      mutation {
+        testMutation
+      }
+    `);
+
+    it('should not call mutation resolver if has no permissions', async (): Promise<void> => {
+      const contextValue =
+        HasPermissionsDirectiveVisitorNonTyped.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: [],
+        });
+      const result = await graphql({
+        contextValue,
+        schema,
+        source,
+      });
+      expect(result).toEqual({
+        data: {
+          testMutation: null,
+        },
+        errors: [
+          new ForbiddenError(
+            `Missing Permissions: ${permissionX}, ${permissionY}`,
+          ),
+        ],
+      });
+      expect(mutationMockResolver).not.toHaveBeenCalled();
+    });
+
+    it('should call mutation if have the permissions', async (): Promise<void> => {
+      const contextValue =
+        HasPermissionsDirectiveVisitorNonTyped.createDirectiveContext({
+          filterMissingPermissions: debugFilterMissingPermissions,
+          grantedPermissions: [permissionX, permissionY],
+        });
+      const result = await graphql({
+        contextValue,
+        schema,
+        source,
+      });
+      expect(result).toEqual({
+        data: {
+          testMutation: 'resolverReturn',
+        },
+      });
+      expect(mutationMockResolver).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('throws if missingPermissions argument type is wrong', async (): Promise<void> => {
     /*
       graphql-tools changed the typing for SchemaDirectiveVisitor and if you define a type for TArgs and TContext,

@@ -249,4 +249,77 @@ directive @${name} on OBJECT | FIELD_DEFINITION
       });
     });
   });
+
+  describe('works on mutation fields', (): void => {
+    const mockResolver = jest.fn().mockReturnValue(42);
+    const schema = new AuthDirective().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Mutation: {
+            testMutation: mockResolver,
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+            type Query {
+              test: Int
+            }
+            type Mutation {
+              testMutation: Int @${name}
+            }
+          `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      mutation {
+        testMutation
+      }
+    `);
+    const rootValue = {
+      test: 0,
+    };
+
+    beforeEach(() => {
+      mockResolver.mockClear();
+    });
+
+    it('if authenticated, performs mutation', async (): Promise<void> => {
+      const contextValue = AuthDirective.createDirectiveContext({
+        isAuthenticated: true,
+      });
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
+      expect(result).toEqual({
+        data: {
+          testMutation: 42,
+        },
+      });
+      expect(mockResolver).toHaveBeenCalledTimes(1);
+    });
+
+    it('if NOT authenticated, throws error and does not call the resolver', async (): Promise<void> => {
+      const contextValue = AuthDirective.createDirectiveContext({
+        isAuthenticated: false,
+      });
+      const result = await graphql({
+        contextValue,
+        rootValue,
+        schema,
+        source,
+      });
+      expect(result).toEqual({
+        data: {
+          testMutation: null,
+        },
+        errors: [new AuthenticationError('Unauthenticated')],
+      });
+      expect(mockResolver).not.toHaveBeenCalled();
+    });
+  });
 });
