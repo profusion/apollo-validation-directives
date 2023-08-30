@@ -23,9 +23,9 @@ import {
   print,
   printType,
 } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import createSchemaMapperForVisitor from './createSchemaMapperForVisitor';
+import createSchemaMapperForVisitor from './createSchemaMapperForVisitor.js';
 
 export type ReadonlyGraphQLDirectiveConfigWithoutName = Readonly<{
   [P in keyof Omit<GraphQLDirectiveConfig, 'name'>]: Readonly<

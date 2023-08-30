@@ -28,10 +28,10 @@ import { getDirective, inspect } from '@graphql-tools/utils';
 
 import EasyDirectiveVisitor, {
   getDirectiveDeclaration,
-} from './EasyDirectiveVisitor';
+} from './EasyDirectiveVisitor.js';
 
-import capitalize from './capitalize';
-import ValidationError from './errors/ValidationError';
+import capitalize from './capitalize.js';
+import ValidationError from './errors/ValidationError.js';
 
 export enum ValidateDirectivePolicy {
   RESOLVER = 'RESOLVER',

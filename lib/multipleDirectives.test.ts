@@ -1,15 +1,15 @@
 import { graphql, GraphQLError, type GraphQLSchema } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { buildSubgraphSchema } from '@apollo/subgraph';
 
-import range from './range';
-import listLength from './listLength';
-import trim from './trim';
-import stringLength from './stringLength';
-import applyDirectivesToSchema from './utils/applyDirectivesToSchema';
-import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
-import print from './utils/printer';
+import range from './range.js';
+import trim from './trim.js';
+import stringLength from './stringLength.js';
+import applyDirectivesToSchema from './utils/applyDirectivesToSchema.js';
+import listLength from './listLength.js';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor.js';
+import print from './utils/printer.js';
 
 interface MyType {
   int: number;

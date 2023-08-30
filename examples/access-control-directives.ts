@@ -1,10 +1,10 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import type { MissingPermissionsResolverInfo } from '../lib';
-import { applyDirectivesToSchema, hasPermissions, auth } from '../lib';
+import type { MissingPermissionsResolverInfo } from '../lib/index.js';
+import { applyDirectivesToSchema, hasPermissions, auth } from '../lib/index.js';
 
 const yourTypeDefs = [
   gql`

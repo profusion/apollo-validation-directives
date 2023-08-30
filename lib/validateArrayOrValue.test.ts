@@ -5,7 +5,7 @@ import {
   GraphQLObjectType,
 } from 'graphql';
 
-import validateArrayOrValue from './validateArrayOrValue';
+import validateArrayOrValue from './validateArrayOrValue.js';
 
 describe('validateArrayOrValue', (): void => {
   const passThru = <T>(x: T): T => x;

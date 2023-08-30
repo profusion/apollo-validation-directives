@@ -1,7 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql, print } from 'graphql';
@@ -15,7 +15,7 @@ import {
   trim,
   applyDirectivesToSchema,
 } from '../lib';
-import type ValidationError from '../lib/errors/ValidationError';
+import type ValidationError from '../lib/errors/ValidationError.js';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];

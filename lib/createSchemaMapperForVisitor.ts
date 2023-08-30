@@ -2,7 +2,7 @@ import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils';
 import type { DirectiveLocation, GraphQLSchema } from 'graphql';
 import { isObjectType } from 'graphql';
 
-import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import type EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
 
 export type SchemaMapperFunction = (schema: GraphQLSchema) => GraphQLSchema;
 

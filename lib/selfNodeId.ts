@@ -1,14 +1,14 @@
 import type { GraphQLObjectType, GraphQLInterfaceType } from 'graphql';
 import { DirectiveLocation } from 'graphql';
 
-import ValidationError from './errors/ValidationError';
+import ValidationError from './errors/ValidationError.js';
 
-import type { ValidateFunction } from './ValidateDirectiveVisitor';
-import type ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
+import type { ValidateFunction } from './ValidateDirectiveVisitor.js';
+import type ValidateDirectiveVisitor from './ValidateDirectiveVisitor.js';
 import {
   setFieldResolveToApplyOriginalResolveAndThenValidateResult,
   ValidateDirectiveVisitorNonTyped,
-} from './ValidateDirectiveVisitor';
+} from './ValidateDirectiveVisitor.js';
 
 type ToNodeId = (entityName: string, id: string) => string | null;
 

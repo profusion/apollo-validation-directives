@@ -1,9 +1,9 @@
 import { graphql, GraphQLBoolean, GraphQLObjectType } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
-import ValidateDirectiveVisitor from './ValidateDirectiveVisitor';
+import createValidateDirectiveVisitor from './createValidateDirectiveVisitor.js';
+import ValidateDirectiveVisitor from './ValidateDirectiveVisitor.js';
 
 describe('createValidateDirectiveVisitor', (): void => {
   const validate = jest.fn((x: unknown): unknown =>

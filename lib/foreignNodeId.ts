@@ -3,10 +3,10 @@ import { DirectiveLocation, GraphQLNonNull, GraphQLString } from 'graphql';
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
-} from './ValidateDirectiveVisitor';
-import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
-import validateArrayOrValue from './validateArrayOrValue';
-import ValidationError from './errors/ValidationError';
+} from './ValidateDirectiveVisitor.js';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor.js';
+import validateArrayOrValue from './validateArrayOrValue.js';
+import ValidationError from './errors/ValidationError.js';
 
 export type ToNodeId<IdType> = (
   id: string,

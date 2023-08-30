@@ -3,9 +3,9 @@ import { GraphQLFloat } from 'graphql';
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
-} from './ValidateDirectiveVisitor';
-import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
-import ValidationError from './errors/ValidationError';
+} from './ValidateDirectiveVisitor.js';
+import createValidateDirectiveVisitor from './createValidateDirectiveVisitor.js';
+import ValidationError from './errors/ValidationError.js';
 
 const createValidateMinMax = (min: number, max: number): ValidateFunction => {
   if (min < 0) throw new RangeError('@stringLength(min) must be at least 0');

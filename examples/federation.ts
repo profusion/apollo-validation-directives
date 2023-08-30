@@ -7,7 +7,7 @@ import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { ApolloGateway } from '@apollo/gateway';
 import { buildSubgraphSchema } from '@apollo/subgraph';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import type { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper';
 
 import {
@@ -15,7 +15,7 @@ import {
   range,
   stringLength,
   applyDirectivesToSchema,
-} from '../lib';
+} from '../lib/index.js';
 
 /*
   When using apollo federation all

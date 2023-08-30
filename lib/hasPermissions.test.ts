@@ -6,10 +6,10 @@ import {
   GraphQLError,
 } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import print from './utils/printer';
-import type { MissingPermissionsResolverInfo } from './hasPermissions';
+import print from './utils/printer.js';
+import type { MissingPermissionsResolverInfo } from './hasPermissions.js';
 import {
   debugFilterMissingPermissions,
   debugGetErrorMessage,
@@ -17,11 +17,11 @@ import {
   prodFilterMissingPermissions,
   prodGetErrorMessage,
   getDefaultValue,
-} from './hasPermissions';
+} from './hasPermissions.js';
 
-import EasyDirectiveVisitor from './EasyDirectiveVisitor';
-import ForbiddenError from './errors/ForbiddenError';
-import applyDirectivesToSchema from './utils/applyDirectivesToSchema';
+import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
+import ForbiddenError from './errors/ForbiddenError.js';
+import applyDirectivesToSchema from './utils/applyDirectivesToSchema.js';
 
 describe('@hasPermissions()', (): void => {
   const name = 'hasPermissions';

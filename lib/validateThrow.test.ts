@@ -1,10 +1,10 @@
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql, GraphQLError } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import print from './utils/printer';
-import Range from './range';
+import print from './utils/printer.js';
+import Range from './range.js';
 
 interface ArgsTestResolverCtx {
   shouldCallResolver: boolean;

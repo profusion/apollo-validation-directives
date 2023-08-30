@@ -1,12 +1,12 @@
 import type { GraphQLResolveInfo } from 'graphql';
 import { graphql } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import print from './utils/printer';
+import print from './utils/printer.js';
 
-import AuthDirective from './auth';
-import AuthenticationError from './errors/AuthenticationError';
+import AuthDirective from './auth.js';
+import AuthenticationError from './errors/AuthenticationError.js';
 
 describe('@auth()', (): void => {
   const name = 'auth';

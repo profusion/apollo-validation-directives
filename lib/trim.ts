@@ -3,10 +3,10 @@ import { GraphQLEnumType, GraphQLNonNull } from 'graphql';
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
-} from './ValidateDirectiveVisitor';
-import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
-import neverAssertion from './utils/neverAssertion';
-import createPatternHandler from './patternCommon';
+} from './ValidateDirectiveVisitor.js';
+import createValidateDirectiveVisitor from './createValidateDirectiveVisitor.js';
+import neverAssertion from './utils/neverAssertion.js';
+import createPatternHandler from './patternCommon.js';
 
 export enum TrimMode {
   TRIM_ALL = 'TRIM_ALL',

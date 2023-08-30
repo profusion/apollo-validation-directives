@@ -1,5 +1,5 @@
 import type { GraphQLSchema } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import Trim, {
@@ -7,20 +7,20 @@ import Trim, {
   DEFAULT_TRIM_MODE,
   trimDirectiveSchemaEnumName,
   TrimMode,
-} from './trim';
-import capitalize from './capitalize';
+} from './trim.js';
+import capitalize from './capitalize.js';
 
 import type {
   CreateSchemaConfig,
   ExpectedTestResult,
   TestCase,
-} from './test-utils.test';
+} from './test-utils.test.js';
 import {
   testEasyDirective,
   validationDirectionEnumTypeDefs,
   validationDirectivePolicyArgs,
-} from './test-utils.test';
-import { ValidateDirectivePolicy } from './ValidateDirectiveVisitor';
+} from './test-utils.test.js';
+import { ValidateDirectivePolicy } from './ValidateDirectiveVisitor.js';
 
 type RootValue = {
   arrayTest?: (string | null)[] | null;

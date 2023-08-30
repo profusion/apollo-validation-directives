@@ -2,8 +2,6 @@
   "name": "@profusion/apollo-validation-directives",
   "version": "3.0.0",
   "description": "GraphQL directives to implement field validations in Apollo Server",
-  "main": "./build/lib/index.js",
-  "types": "./build/lib/index.d.ts",
   "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
   "license": "MIT",
   "repository": "https://github.com/profusion/apollo-validation-directives",
@@ -13,6 +11,19 @@
       "jest --bail --findRelatedTests"
     ]
   },
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "types": "./build/types/index.d.ts",
+  "main": "./build/cjs/index.js",
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "import": "./build/esm/index.js",
+      "require": "./build/cjs/index.js"
+    }
+  },
   "scripts": {
     "example:value-validation": "ts-node examples/value-validation-directives.ts",
     "example:access-control": "ts-node examples/access-control-directives.ts",
@@ -21,17 +32,19 @@
     "check-types": "tsc --noEmit",
     "run-lint": "eslint --max-warnings=0 --ext .ts lib examples",
     "lint": "run-s check-types run-lint",
-    "build": "tsc",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc",
+    "build": "run-p build:* && sh ./.scripts/patch-cjs-package.sh",
     "test": "jest",
     "prepare": "husky install",
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "yarn run build"
   },
   "devDependencies": {
     "@apollo/gateway": "^2.5.1",
     "@apollo/server": "^4.9.0",
     "@apollo/subgraph": "^2.5.1",
-    "@commitlint/cli": "^17.0.3",
-    "@commitlint/config-angular": "^17.0.3",
+    "@commitlint/cli": "^17.7.1",
+    "@commitlint/config-angular": "^17.7.0",
     "@types/jest": "^29.5.4",
     "@types/lodash.isequal": "^4.5.6",
     "@types/node": "18.17.1",
@@ -52,7 +65,7 @@
     "prettier": "^3.0.3",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
-    "typescript": "^4.7.4"
+    "typescript": "^5.2.2"
   },
   "peerDependencies": {
     "graphql": "^16.7.1"

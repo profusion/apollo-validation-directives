@@ -1,9 +1,9 @@
 import { GraphQLNonNull, GraphQLString } from 'graphql';
 
-import type { ValidateFunction } from './ValidateDirectiveVisitor';
-import createValidateDirectiveVisitor from './createValidateDirectiveVisitor';
-import type { PatternDirectiveArgs } from './patternCommon';
-import createPatternHandler, { defaultArgs } from './patternCommon';
+import type { ValidateFunction } from './ValidateDirectiveVisitor.js';
+import createValidateDirectiveVisitor from './createValidateDirectiveVisitor.js';
+import type { PatternDirectiveArgs } from './patternCommon.js';
+import createPatternHandler, { defaultArgs } from './patternCommon.js';
 
 type CleanUpPatternArgs = PatternDirectiveArgs & { replaceWith: string };
 

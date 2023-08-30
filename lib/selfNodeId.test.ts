@@ -1,15 +1,15 @@
 import { graphql } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import print from './utils/printer';
+import print from './utils/printer.js';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
-} from './test-utils.test';
-import SelfNodeId from './selfNodeId';
-import capitalize from './capitalize';
-import ValidationError from './errors/ValidationError';
+} from './test-utils.test.js';
+import SelfNodeId from './selfNodeId.js';
+import capitalize from './capitalize.js';
+import ValidationError from './errors/ValidationError.js';
 
 const toNodeId = (name: string, id: string): string =>
   Buffer.from(`${name}:${id}`).toString('base64');

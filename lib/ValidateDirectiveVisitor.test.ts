@@ -14,23 +14,23 @@ import {
   GraphQLList,
   GraphQLNonNull,
 } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import print from './utils/printer';
+import print from './utils/printer.js';
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
-} from './ValidateDirectiveVisitor';
-import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
+} from './ValidateDirectiveVisitor.js';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor.js';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
-} from './test-utils.test';
+} from './test-utils.test.js';
 
-import capitalize from './capitalize';
-import ValidationError from './errors/ValidationError';
-import createSchemaMapperForVisitor from './createSchemaMapperForVisitor';
+import capitalize from './capitalize.js';
+import ValidationError from './errors/ValidationError.js';
+import createSchemaMapperForVisitor from './createSchemaMapperForVisitor.js';
 
 interface ValidationErrorsResolverInfo extends GraphQLResolveInfo {
   validationErrors?: ValidationError[];

@@ -1,16 +1,16 @@
 import { graphql } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import print from './utils/printer';
-import type { ToNodeId } from './foreignNodeId';
-import ForeignNodeId from './foreignNodeId';
+import print from './utils/printer.js';
+import type { ToNodeId } from './foreignNodeId.js';
+import ForeignNodeId from './foreignNodeId.js';
 import {
   validationDirectivePolicyArgs,
   validationDirectionEnumTypeDefs,
-} from './test-utils.test';
-import capitalize from './capitalize';
-import ValidationError from './errors/ValidationError';
+} from './test-utils.test.js';
+import capitalize from './capitalize.js';
+import ValidationError from './errors/ValidationError.js';
 
 describe('@foreignNodeId()', (): void => {
   const toNodeId = (typenane: string, id: string): string =>

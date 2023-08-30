@@ -1,11 +1,10 @@
-import type { GraphQLSchema } from 'graphql';
+import type { GraphQLSchema, ExecutionResult } from 'graphql';
 import { graphql } from 'graphql';
-import type { ExecutionResult } from 'graphql/execution/execute';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import print from './utils/printer';
-import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
-import capitalize from './capitalize';
+import print from './utils/printer.js';
+import type EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
+import capitalize from './capitalize.js';
 
 export const minimalTypeDef = gql`
   type T {

@@ -1,11 +1,11 @@
 import { GraphQLNonNull, GraphQLString } from 'graphql';
 
-import ValidationError from './errors/ValidationError';
+import ValidationError from './errors/ValidationError.js';
 
 import type {
   ValidationDirectiveArgs,
   ValidateFunction,
-} from './ValidateDirectiveVisitor';
+} from './ValidateDirectiveVisitor.js';
 
 export type PatternDirectiveArgs = {
   regexp: string;

@@ -18,13 +18,13 @@ import {
 
 import isEqual from 'lodash.isequal';
 
-import EasyDirectiveVisitor from './EasyDirectiveVisitor';
-import ForbiddenError from './errors/ForbiddenError';
+import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
+import ForbiddenError from './errors/ForbiddenError.js';
 
-import type { ValidateFunction } from './ValidateDirectiveVisitor';
+import type { ValidateFunction } from './ValidateDirectiveVisitor.js';
 import ValidateDirectiveVisitor, {
   ValidateDirectivePolicy,
-} from './ValidateDirectiveVisitor';
+} from './ValidateDirectiveVisitor.js';
 
 const isDebug = !!(
   process &&

@@ -1,9 +1,9 @@
 import type {
   ValidateFunction,
   ValidationDirectiveArgs,
-} from './ValidateDirectiveVisitor';
-import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor';
-import validateArrayOrValue from './validateArrayOrValue';
+} from './ValidateDirectiveVisitor.js';
+import { ValidateDirectiveVisitorNonTyped } from './ValidateDirectiveVisitor.js';
+import validateArrayOrValue from './validateArrayOrValue.js';
 
 export type CreateValidate<TArgs extends object> = (
   args: TArgs,

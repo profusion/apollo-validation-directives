@@ -13,8 +13,19 @@ module.exports = {
     },
   },
   moduleFileExtensions: ['ts', 'js'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   modulePaths: ['<rootDir>/lib/'],
   preset: 'ts-jest',
   testEnvironment: 'node',
   testPathIgnorePatterns: ['/node_modules/', '/build/', 'test-utils.test.ts'],
+  transform: {
+    '^.+\\.(mt|t|cj|j)s$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
+  },
 };

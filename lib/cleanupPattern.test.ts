@@ -1,15 +1,18 @@
 import type { GraphQLSchema } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
-import CleanupPattern from './cleanupPattern';
-import capitalize from './capitalize';
+import CleanupPattern from './cleanupPattern.js';
+import capitalize from './capitalize.js';
 
-import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
+import type {
+  CreateSchemaConfig,
+  ExpectedTestResult,
+} from './test-utils.test.js';
 import {
   testEasyDirective,
   validationDirectivePolicyArgs,
-} from './test-utils.test';
+} from './test-utils.test.js';
 
 type RootValue = {
   arrayTest?: (string | null)[] | null;

@@ -10,8 +10,8 @@ import type {
 
 import { getDirective } from '@graphql-tools/utils';
 
-import EasyDirectiveVisitor from './EasyDirectiveVisitor';
-import AuthenticationError from './errors/AuthenticationError';
+import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
+import AuthenticationError from './errors/AuthenticationError.js';
 
 type ResolverArgs<TContext extends object = object> = Parameters<
   GraphQLFieldResolver<unknown, TContext>

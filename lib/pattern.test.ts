@@ -1,18 +1,21 @@
 import type { GraphQLSchema } from 'graphql';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import type { IResolvers } from '@graphql-tools/utils';
 
-import Pattern from './pattern';
-import capitalize from './capitalize';
+import Pattern from './pattern.js';
+import capitalize from './capitalize.js';
 
-import type { CreateSchemaConfig, ExpectedTestResult } from './test-utils.test';
+import type {
+  CreateSchemaConfig,
+  ExpectedTestResult,
+} from './test-utils.test.js';
 import {
   testEasyDirective,
   validationDirectivePolicyArgs,
-} from './test-utils.test';
-import ValidationError from './errors/ValidationError';
+} from './test-utils.test.js';
+import ValidationError from './errors/ValidationError.js';
 
 type RootValue = {
   arrayTest?: (string | null)[] | null;

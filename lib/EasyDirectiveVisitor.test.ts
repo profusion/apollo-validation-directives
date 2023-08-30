@@ -10,10 +10,10 @@ import {
   GraphQLBoolean,
 } from 'graphql';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
-import print from './utils/printer';
-import EasyDirectiveVisitor from './EasyDirectiveVisitor';
+import print from './utils/printer.js';
+import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
 
 describe('EasyDirectiveVisitor', (): void => {
   const minimalTypeDef = gql`
