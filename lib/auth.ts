@@ -23,8 +23,14 @@ export type AuthContext<TContext extends object = object> = {
 
 class AuthDirectiveVisitor<
   TContext extends AuthContext,
+> extends EasyDirectiveVisitor<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-> extends EasyDirectiveVisitor<any, TContext> {
+  any,
+  TContext,
+  | DirectiveLocation.QUERY
+  | DirectiveLocation.OBJECT
+  | DirectiveLocation.FIELD_DEFINITION
+> {
   public errorMessage = 'Unauthenticated';
 
   public static readonly config: (typeof EasyDirectiveVisitor)['config'] = {

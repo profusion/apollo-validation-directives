@@ -1,14 +1,14 @@
-import type { GraphQLSchema } from 'graphql';
+import type { DirectiveLocation, GraphQLSchema } from 'graphql';
 
 import type EasyDirectiveVisitor from '../EasyDirectiveVisitor.js';
 
-interface EasyDirectiveVisitorConstructor {
+interface EasyDirectiveVisitorConstructor<T extends DirectiveLocation> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  new (): EasyDirectiveVisitor<any, any>;
+  new (): EasyDirectiveVisitor<any, any, T>;
 }
 
-const applyDirectivesToSchema = (
-  directives: EasyDirectiveVisitorConstructor[],
+const applyDirectivesToSchema = <T extends DirectiveLocation>(
+  directives: EasyDirectiveVisitorConstructor<T>[],
   schema: GraphQLSchema,
 ): GraphQLSchema =>
   directives.reduce(

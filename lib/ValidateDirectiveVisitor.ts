@@ -755,7 +755,16 @@ const wrapFieldsRequiringValidation = <TContext>(
 abstract class ValidateDirectiveVisitor<
   TArgs extends ValidationDirectiveArgs,
   TContext extends object = object,
-> extends EasyDirectiveVisitor<TArgs, TContext> {
+> extends EasyDirectiveVisitor<
+  TArgs,
+  TContext,
+  | DirectiveLocation.QUERY
+  | DirectiveLocation.ARGUMENT_DEFINITION
+  | DirectiveLocation.INPUT_FIELD_DEFINITION
+  | DirectiveLocation.INPUT_OBJECT
+  | DirectiveLocation.FIELD_DEFINITION
+  | DirectiveLocation.OBJECT
+> {
   public static readonly commonTypes: (typeof EasyDirectiveVisitor)['commonTypes'] =
     [validatedInputErrorListType, validatedErrorOutputType] as const;
 

@@ -1412,8 +1412,13 @@ enum HasPermissionsDirectivePolicy {
       If you are using the old graphql-tools, you can use:
       EasyDirectiveVisitor<Record<string, never>, Record<string, never>>
     */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    class InjectMissingPermissions extends EasyDirectiveVisitor<any, any> {
+    class InjectMissingPermissions extends EasyDirectiveVisitor<
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any,
+      DirectiveLocation.QUERY
+    > {
       public static readonly config: (typeof EasyDirectiveVisitor)['config'] = {
         locations: [DirectiveLocation.FIELD_DEFINITION],
       };

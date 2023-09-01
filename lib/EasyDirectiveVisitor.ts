@@ -1,4 +1,5 @@
 import type {
+  DirectiveLocation,
   DocumentNode,
   GraphQLArgument,
   GraphQLDirectiveConfig,
@@ -189,6 +190,7 @@ export const getDirectiveDeclaration = (
 abstract class EasyDirectiveVisitor<
   TArgs extends object,
   TContext extends object,
+  TLocation extends DirectiveLocation = never,
 > {
   args: TArgs;
 
@@ -320,7 +322,7 @@ abstract class EasyDirectiveVisitor<
   public visitArgumentDefinition(
     argument: GraphQLArgument,
     { field }: { field: GraphQLField<unknown, unknown, any> },
-  ): void {
+  ): TLocation extends DirectiveLocation.ARGUMENT_DEFINITION ? void : never {
     throw new Error('Method not implemented.');
   }
 
@@ -333,7 +335,7 @@ abstract class EasyDirectiveVisitor<
   public visitInputFieldDefinition(
     field: GraphQLInputField,
     { objectType }: { objectType: GraphQLInputObjectType },
-  ): void {
+  ): TLocation extends DirectiveLocation.INPUT_FIELD_DEFINITION ? void : never {
     throw new Error('Method not implemented.');
   }
 
@@ -341,14 +343,14 @@ abstract class EasyDirectiveVisitor<
   public visitFieldDefinition(
     field: GraphQLFieldConfig<unknown, TContext, TArgs>,
     { objectType }: { objectType: GraphQLObjectType<any, any> },
-  ): void {
+  ): TLocation extends DirectiveLocation.FIELD_DEFINITION ? void : never {
     throw new Error('Method not implemented.');
   }
 
   // istanbul ignore next (should be overridden and never reached)
   public visitObject(
     object: GraphQLInterfaceType | GraphQLObjectType<any, any>,
-  ): void {
+  ): TLocation extends DirectiveLocation.OBJECT ? void : never {
     throw new Error('Method not implemented.');
   }
 
@@ -357,7 +359,7 @@ abstract class EasyDirectiveVisitor<
     query: GraphQLObjectType<any, TContext>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): void {
+  ): TLocation extends DirectiveLocation.QUERY ? void : never {
     throw new Error('Method not implemented.');
   }
   /* eslint-enable class-methods-use-this, class-methods-use-this, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */

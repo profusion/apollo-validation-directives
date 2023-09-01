@@ -1,5 +1,5 @@
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils';
-import type { GraphQLSchema } from 'graphql';
+import type { DirectiveLocation, GraphQLSchema } from 'graphql';
 import { isObjectType } from 'graphql';
 
 import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
@@ -7,10 +7,10 @@ import type EasyDirectiveVisitor from './EasyDirectiveVisitor';
 export type SchemaMapperFunction = (schema: GraphQLSchema) => GraphQLSchema;
 
 export const createSchemaMapperForVisitor =
-  (
+  <T extends DirectiveLocation>(
     directiveName: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    visitor: EasyDirectiveVisitor<any, any>,
+    visitor: EasyDirectiveVisitor<any, any, T>,
   ): SchemaMapperFunction =>
   (unmappedSchema: GraphQLSchema): GraphQLSchema => {
     return mapSchema(unmappedSchema, {
