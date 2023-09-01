@@ -21,10 +21,12 @@ This project exposes few helpers:
   `getDirectiveDeclaration()` based on static (class) attributes.
 - `ValidateDirectiveVisitor` builds on top of `EasyDirectiveVisitor`
   and does all the required work to validate both output and input
-  (arguments). All it need is `getValidationForArgs()`. Note that
-  due a GraphQL limitation of no input type resolvers we need to
-  patch the executable schema using `addValidationResolversToSchema()`
-  in order to properly validate them!
+  (arguments). All it needs is `getValidationForArgs()`.
+- `createSchemaMapperForVisitor()` is a helper to adapt the old visitor API
+  to the new one using schema mappers. It takes the directive name and the visitor's
+  instance as arguments.
+- `applyDirectivesToSchema` is useful to apply several directive mappers to a schema.
+  It takes a list of directives and a schema as arguments.
 
 # Directives
 
@@ -61,23 +63,33 @@ type MyAuthenticatedObject @auth {
 Code:
 
 ```typescript
-import { auth } from '@profusion/apollo-validation-directives';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { auth, applyDirectivesToSchema } from '@profusion/apollo-validation-directives';
 
-const server = new ApolloServer({
-  resolvers,
-  schemaDirectives: { auth },
-  typeDefs: [
-    ...yourTypeDefs,
-    ...auth.getTypeDefs(),
-  ],
-  context: (expressContext) => {
+const schema = applyDirectivesToSchema(
+  [auth],
+  makeExecutableSchema({
+    resolvers,
+    typeDefs: [
+      ...auth.getTypeDefs(),
+      ...yourTypeDefs,
+    ],
+  })
+)
+
+const server = new ApolloServer({ schema });
+
+startStandaloneServer(server, {
+  context: async (expressContext) => {
     const { authorization } = expressContext.req.headers;
     const isAuthenticated = isAuthorizationValid(authorization);
     return auth.createDirectiveContext({
       isAuthenticated: () => isAuthenticated,
     });
   },
-});
+})
 ```
 
 ### `@hasPermissions()`
@@ -128,22 +140,35 @@ type MyRestrictedObject @hasPermissions(permissions: ["x"]) {
 Code:
 
 ```typescript
-import { hasPermissions } from '@profusion/apollo-validation-directives';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import {
+  hasPermissions,
+  applyDirectivesToSchema
+} from '@profusion/apollo-validation-directives';
 
-const server = new ApolloServer({
-  resolvers,
-  schemaDirectives: { hasPermissions },
-  typeDefs: [
-    ...yourTypeDefs,
-    ...hasPermissions.getTypeDefs(),
-  ],
-  context: (expressContext) => {
+const schema = applyDirectivesToSchema(
+  [hasPermissions],
+  makeExecutableSchema({
+    resolvers,
+    typeDefs: [
+      ...yourTypeDefs,
+      ...hasPermissions.getTypeDefs(),
+    ],
+  })
+)
+
+const server = new ApolloServer({ schema });
+
+startStandaloneServer(server, {
+  context: async (expressContext) => {
     const { authorization } = expressContext.req.headers;
     return hasPermissions.createDirectiveContext({
       grantedPermissions: getPermissions(authorization),
     });
   },
-});
+})
 ```
 
 There are some cases where the checkMissingPermissions() function is not called, the cases are:
@@ -164,11 +189,7 @@ There are some cases where the checkMissingPermissions() function is not called,
 
 ## Value Validation
 
-The value validation directives do not require a specific context,
-however in order to have them to work on input types/fields one must
-call `ValidateDirectiveVisitor.addValidationResolversToSchema()` on
-the executable schema so the resolvers are properly wrapped
-with type checks.
+The value validation directives do not require a specific context.
 
 They can all be used on multiple locations: `ARGUMENT_DEFINITION`,
 `FIELD_DEFINITION`, `INPUT_FIELD_DEFINITION`, `INPUT_OBJECT` and
@@ -185,22 +206,27 @@ fields. These types are exposed by
 `ValidateDirectiveVisitor.getMissingCommonTypeDefs()`.
 
 ```typescript
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { range, ValidateDirectiveVisitor } from '@profusion/apollo-validation-directives';
+import {
+  range,
+  ValidateDirectiveVisitor,
+  applyDirectivesToSchema,
+} from '@profusion/apollo-validation-directives';
 
-const schema = makeExecutableSchema({
-  typeDefs: [
-    ...yourTypeDefs,
-    ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
-    ...range.getTypeDefs(),
-    // ... any other validation here ...
-  ],
-  schemaDirectives: { range },
-  resolvers,
-});
-
-// needed to validate input fields!
-ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
+const schema = applyDirectivesToSchema(
+  [range],
+  makeExecutableSchema({
+    typeDefs: [
+      ...yourTypeDefs,
+      ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
+      ...range.getTypeDefs(),
+      // ... any other validation here ...
+    ],
+    resolvers,
+  })
+);
 
 const server = new ApolloServer({ schema });
 ```
@@ -373,21 +399,34 @@ type MyAuthenticatedObject @selfNodeId {
 Code:
 
 ```typescript
-import { selfNodeId } from '@profusion/apollo-validation-directives';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import {
+  selfNodeId,
+  applyDirectivesToSchema
+} from '@profusion/apollo-validation-directives';
 
-const server = new ApolloServer({
-  resolvers,
-  schemaDirectives: { selfNodeId },
-  typeDefs: [
-    ...yourTypeDefs,
-    ...selfNodeId.getTypeDefs(),
-  ],
+const schema = applyDirectivesToSchema(
+  [selfNodeId],
+  makeExecutableSchema({
+      resolvers,
+      typeDefs: [
+        ...yourTypeDefs,
+        ...selfNodeId.getTypeDefs(),
+      ],
+  })
+);
+
+const server = new ApolloServer({ schema });
+
+startStandaloneServer(server, {
   context: () => {
     return selfNodeId.createDirectiveContext({
       toNodeId: (typename, id) => Buffer.from(`${typename}:${id}`).toString('base64'),
     });
   },
-});
+})
 ```
 
 ### `@foreignNodeId`
@@ -437,15 +476,28 @@ type Query {
 Code:
 
 ```typescript
-import { foreignNodeId } from '@profusion/apollo-validation-directives';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import {
+  applyDirectivesToSchema,
+  foreignNodeId,
+} from '@profusion/apollo-validation-directives';
 
-const server = new ApolloServer({
-  resolvers,
-  schemaDirectives: { foreignNodeId },
-  typeDefs: [
-    ...yourTypeDefs,
-    ...foreignNodeId.getTypeDefs(),
-  ],
+const schema = applyDirectivesToSchema(
+  [foreignNodeId],
+  makeExecutableSchema({
+    resolvers,
+    typeDefs: [
+      ...yourTypeDefs,
+      ...foreignNodeId.getTypeDefs(),
+    ],
+  })
+);
+
+const server = new ApolloServer({ schema });
+
+startStandaloneServer(server, {
   context: () => {
     return foreignNodeId.createDirectiveContext({
       fromNodeId: (id) => {
@@ -464,58 +516,65 @@ const server = new ApolloServer({
 
 ### Apollo Federation
 
-In order to use this package with apollo federation, one must remember
-that __all__ directives should be available to all micros-services (even
-if they not use it). Having this in mind, to setup a micro-service one
-could do the following:
+You can use this library in your federation subgraphs as well.
+
+In the example below, we add `@range` and `@stringLength` to the server. You can see a full code example at [examples/federation.ts](./examples/federation.ts).
 
 ```typescript
-import { GraphQLSchema, DocumentNode } from 'graphql';
-import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
-import { buildFederatedSchema } from '@apollo/federation';
-import { GraphQLResolverMap } from 'apollo-graphql';
-import { ValidateDirectiveVisitor, range, stringLength } from '@profusion/apollo-validation-directives';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/dist/esm/standalone';
+import { buildSubgraphSchema } from '@apollo/subgraph';
+import { gql } from 'graphql-tag';
+import type { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper';
+import type { DocumentNode, GraphQLSchema } from 'graphql';
 
+import {
+  ValidateDirectiveVisitor,
+  range,
+  stringLength,
+  applyDirectivesToSchema,
+} from '@profusion/apollo-validation-directives';
 
 // buildSchema.ts
 
-/*
-  When using apollo federation all
-  directives should be available to all
-  federated nodes.
-*/
-const directives = {
-  range,
-  stringLength,
-};
-
-export const buildSchema = (
+const buildSchema = (
   resolvers: GraphQLResolverMap<{}>,
   typeDefs: DocumentNode,
 ): GraphQLSchema => {
   const finalTypeDefs = [
     typeDefs,
     ...ValidateDirectiveVisitor.getMissingCommonTypeDefs(),
-    ...Object.values(directives).reduce<DocumentNode[]>(
+    ...directives.reduce<DocumentNode[]>(
       (acc, d) => acc.concat(d.getTypeDefs()),
       [],
     ),
   ];
-  const schema = buildFederatedSchema({ resolvers, typeDefs: finalTypeDefs });
-  SchemaDirectiveVisitor.visitSchemaDirectives(schema, directives);
-  ValidateDirectiveVisitor.addValidationResolversToSchema(schema);
-  return schema;
+  return buildSubgraphSchema({
+    resolvers: resolvers as GraphQLResolverMap<unknown>,
+    typeDefs: finalTypeDefs,
+  });
 };
 
 // server.ts
 
-const resolvers = { /*  the resolvers... */ };
+const resolvers = {
+  /*  the resolvers... */
+};
 const typeDefs = gql`....`;
 
-const { url } = await new ApolloServer({
+const directives = [range, stringLength];
+
+const server = new ApolloServer({
   // From buildSchema.ts
-  schema: buildSchema(resolvers, typeDefs),
-}).listen(),
+  schema: applyDirectivesToSchema(
+    directives,
+    buildSchema(resolvers, typeDefs),
+  ),
+});
+startStandaloneServer(server).then(({ url }) =>
+  console.log(`🚀 server ready at ${url}`),
+);
+
 ```
 
 See [examples/federation.ts](./examples/federation.ts)
