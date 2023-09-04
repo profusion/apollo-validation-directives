@@ -30,6 +30,56 @@ This project exposes few helpers:
 
 # Directives
 
+## Applying to schema
+
+Each directive instance has an `applyToSchema` method that takes a schema as argument
+and applies the directive to it. Then returns the modified schema.
+
+```typescript
+import { range as RangeDirective } from '@profusion/apollo-validation-directives';
+
+const range = new RangeDirective();
+const schema = range.applyToSchema(
+  makeExecutableSchema(/* ... */),
+);
+```
+
+To apply several directives easily, use the `applyDirectivesToSchema` helper:
+
+```typescript
+import {
+  applyDirectivesToSchema,
+  auth,
+  range,
+  stringLength,
+} from '@profusion/apollo-validation-directives';
+
+const schema = applyDirectivesToSchema(
+  [auth, range, stringLength],
+  makeExecutableSchema(/* ... */),
+);
+```
+
+### Execution order
+
+Due to how the schema mappers works, the directives will be called in the
+order they are mapped to the schema, no matter the order they are put in the schema declaration.
+
+So be careful with the order you pass the directives to the `applyDirectivesToSchema` helper.
+
+For example, if you have the schema below:
+
+```graphql
+type Query {
+  test: (arg: String @trim @stringLength(max: 5)) String
+}
+```
+
+And you call `applyDirectivesToSchema([stringLength, trim], schema)`,
+the `stringLength` directive will be called before the `trim` directive.
+
+Remember to pass the directives to the mapper in the order you want them to be called!
+
 ## Access Control
 
 See [examples/access-control-directives.ts](./examples/access-control-directives.ts)
