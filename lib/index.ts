@@ -9,7 +9,10 @@ export {
 export { default as createValidateDirectiveVisitor } from './createValidateDirectiveVisitor.js';
 export { default as validateArrayOrValue } from './validateArrayOrValue.js';
 export { default as applyDirectivesToSchema } from './utils/applyDirectivesToSchema.js';
-export { default as createSchemaMapperForVisitor } from './createSchemaMapperForVisitor.js';
+export {
+  createMapper,
+  createSchemaMapperForVisitor,
+} from './createSchemaMapperForVisitor.js';
 
 // validation directives
 export {
