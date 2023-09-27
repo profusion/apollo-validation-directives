@@ -267,6 +267,7 @@ directive @${name} on OBJECT | FIELD_DEFINITION
             }
             type Mutation {
               testMutation: Int @${name}
+              otherMutation: Int
             }
           `,
         ],

@@ -1,4 +1,8 @@
-import type { GraphQLObjectType, GraphQLResolveInfo } from 'graphql';
+import type {
+  GraphQLFieldConfig,
+  GraphQLObjectType,
+  GraphQLResolveInfo,
+} from 'graphql';
 import {
   defaultFieldResolver,
   DirectiveLocation,
@@ -1417,7 +1421,7 @@ enum HasPermissionsDirectivePolicy {
       any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any,
-      DirectiveLocation.QUERY
+      DirectiveLocation.QUERY | DirectiveLocation.FIELD_DEFINITION
     > {
       public static readonly config: (typeof EasyDirectiveVisitor)['config'] = {
         locations: [DirectiveLocation.FIELD_DEFINITION],
@@ -1426,7 +1430,9 @@ enum HasPermissionsDirectivePolicy {
       public static readonly defaultName: string = 'injectMissingPermissions';
 
       // eslint-disable-next-line class-methods-use-this
-      public visitQuery(query: GraphQLObjectType<unknown, unknown>): void {
+      public visitQuery(
+        query: GraphQLObjectType<unknown, unknown>,
+      ): GraphQLObjectType<unknown, unknown> {
         const field = query.getFields().test;
         const { resolve = defaultFieldResolver } = field;
         // eslint-disable-next-line no-param-reassign
@@ -1438,6 +1444,15 @@ enum HasPermissionsDirectivePolicy {
           };
           return resolve.apply(this, [obj, args, context, enhancedInfo]);
         };
+
+        return query;
+      }
+
+      // eslint-disable-next-line class-methods-use-this
+      public visitFieldDefinition(
+        field: GraphQLFieldConfig<unknown, unknown, unknown>,
+      ): GraphQLFieldConfig<unknown, unknown, unknown> {
+        return field;
       }
     }
 

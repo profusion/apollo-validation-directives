@@ -21,6 +21,10 @@ export const createMapper = <T extends DirectiveLocation>(
     visitor.visitQuery(query, schema, directiveName);
     return query;
   },
+  [MapperKind.MUTATION](mutation, schema): GraphQLObjectType {
+    visitor.visitMutation(mutation, schema, directiveName);
+    return mutation;
+  },
   [MapperKind.OBJECT_TYPE](type, schema): GraphQLObjectType {
     const [directive] = getDirective(schema, type, directiveName) ?? [];
     if (!directive) return type;
@@ -35,8 +39,6 @@ export const createMapper = <T extends DirectiveLocation>(
     typeName,
     schema,
   ): GraphQLFieldConfig<unknown, unknown> {
-    // query fields will be handled by MapperKind.QUERY
-    if (typeName === 'Query') return fieldConfig;
     const [directive] = getDirective(schema, fieldConfig, directiveName) ?? [];
     if (!directive) return fieldConfig;
     // eslint-disable-next-line no-param-reassign
@@ -57,8 +59,7 @@ export const createSchemaMapperForVisitor =
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     visitor: EasyDirectiveVisitor<any, any, T>,
   ): SchemaMapperFunction =>
-  (unmappedSchema: GraphQLSchema): GraphQLSchema => {
-    return mapSchema(unmappedSchema, createMapper(directiveName, visitor));
-  };
+  (unmappedSchema: GraphQLSchema): GraphQLSchema =>
+    mapSchema(unmappedSchema, createMapper(directiveName, visitor));
 
 export default createSchemaMapperForVisitor;

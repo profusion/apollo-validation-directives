@@ -1,4 +1,4 @@
-import type { GraphQLSchema } from 'graphql';
+import { GraphQLError, type GraphQLSchema } from 'graphql';
 import { gql } from 'graphql-tag';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
@@ -23,6 +23,9 @@ type RootValue = {
   number?: number;
   bool?: boolean;
   obj?: { toString(): string };
+  directiveOnInput?: string | null;
+  directiveOnMutationArg?: string | null;
+  directiveOnMutationField?: string | null;
 };
 
 type ResultValue = Omit<RootValue, 'obj'> & {
@@ -54,6 +57,14 @@ const createSchema = ({
                   bool: Boolean @${name}${directiveArgs}
                   obj: SomeObj @${name}${directiveArgs}
                 }
+                input InputTypeWithDirective {
+                  value: String! @${name}${directiveArgs}
+                }
+                type Mutation {
+                  directiveOnInput(input: InputTypeWithDirective!): String
+                  directiveOnMutationArg(input: String! @${name}${directiveArgs}): String
+                  directiveOnMutationField(input: String): String @${name}${directiveArgs}
+                }
               `,
       ],
     }),
@@ -80,6 +91,60 @@ testEasyDirective({
 )`,
   name,
   testCases: [
+    {
+      directiveArgs: '(regexp: "[a-z]+")',
+      operation:
+        'mutation TestMutation { directiveOnInput(input: { value: "987" }) }',
+      tests: [
+        {
+          expected: {
+            data: {
+              directiveOnInput: null,
+            },
+            errors: [new GraphQLError('Does not match pattern: /[a-z]+/')],
+          },
+          rootValue: {
+            directiveOnInput: 'Value returned',
+          },
+        },
+      ],
+    },
+    {
+      directiveArgs: '(regexp: "[a-z]+")',
+      operation:
+        'mutation TestMutation { directiveOnMutationField(input: "abc 123") }',
+      tests: [
+        {
+          expected: {
+            data: {
+              directiveOnMutationField: null,
+            },
+            errors: [new GraphQLError('Does not match pattern: /[a-z]+/')],
+          },
+          rootValue: {
+            directiveOnMutationField: '1234',
+          },
+        },
+      ],
+    },
+    {
+      directiveArgs: '(regexp: "[a-z]+")',
+      operation:
+        'mutation TestMutation { directiveOnMutationArg(input: "123456") }',
+      tests: [
+        {
+          expected: {
+            data: {
+              directiveOnMutationArg: null,
+            },
+            errors: [new GraphQLError('Does not match pattern: /[a-z]+/')],
+          },
+          rootValue: {
+            directiveOnMutationArg: '1234',
+          },
+        },
+      ],
+    },
     {
       directiveArgs: '(regexp: "[a-z]+", flags: "i")',
       operation: '{ test }',

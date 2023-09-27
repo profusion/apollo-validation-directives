@@ -346,7 +346,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(mockValidate).toBeCalledWith(
           value,
           GraphQLInt,
-          schema.getType('Query') as GraphQLObjectType,
+          expect.objectContaining({ name: 'Query' }),
           contextValue,
           expect.any(Object),
           undefined,

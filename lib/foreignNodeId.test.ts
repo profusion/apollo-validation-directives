@@ -255,4 +255,124 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     });
     expect(result).toEqual({ data: rootValue });
   });
+
+  it('should work when used on mutation inputs', async (): Promise<void> => {
+    const mockResolver = jest.fn().mockReturnValue('return value');
+    const typeName = 'MyType';
+    const decodedId = 'abc';
+    const encodedId = toNodeId('MyType', decodedId);
+    const schema = new ForeignNodeId().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Mutation: {
+            testDirective: mockResolver,
+          },
+          Query: {
+            dummy: () => '',
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+            input Input1 {
+              typeId: ID! @foreignNodeId(typename: "${typeName}")
+            }
+            type Query {
+              dummy: String
+            }
+            type Mutation {
+              testDirective(input: Input1): String
+            }
+          `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      mutation Testing($input: Input1!) {
+        testDirective(input: $input)
+      }
+    `);
+    const contextValue = ForeignNodeId.createDirectiveContext({
+      fromNodeId,
+    });
+
+    await graphql({
+      contextValue,
+      schema,
+      source,
+      variableValues: {
+        input: {
+          typeId: encodedId,
+        },
+      },
+    });
+    expect(mockResolver).toHaveBeenCalledTimes(1);
+    expect(mockResolver).toHaveBeenCalledWith(
+      undefined,
+      {
+        input: {
+          typeId: decodedId,
+        },
+      },
+      contextValue,
+      expect.any(Object),
+    );
+  });
+
+  it('should not duplicate validation when same type is used on Query and Mutation', async () => {
+    const mockResolver = jest.fn().mockReturnValue('return value');
+    const typeName = 'MyType';
+    const decodedId = 'abc';
+    const encodedId = toNodeId('MyType', decodedId);
+    const schema = new ForeignNodeId().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Mutation: {
+            testDirective: mockResolver,
+          },
+          Query: {
+            dummy: () => '',
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+            input Input1 {
+              typeId: ID! @foreignNodeId(typename: "${typeName}")
+            }
+            type Query {
+              dummy(input: Input1): String
+            }
+            type Mutation {
+              testDirective(input: Input1): String
+              otherMutation(input: Input1): String
+            }
+          `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      mutation Testing($input: Input1!) {
+        testDirective(input: $input)
+      }
+    `);
+    const contextValue = ForeignNodeId.createDirectiveContext({
+      fromNodeId,
+    });
+    const fromNodeIdSpy = jest.spyOn(contextValue, 'fromNodeId');
+
+    await graphql({
+      contextValue,
+      schema,
+      source,
+      variableValues: {
+        input: {
+          typeId: encodedId,
+        },
+      },
+    });
+
+    expect(fromNodeIdSpy).toHaveBeenCalledTimes(1);
+    expect(fromNodeIdSpy).toHaveBeenCalledWith(encodedId);
+  });
 });

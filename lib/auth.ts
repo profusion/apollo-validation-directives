@@ -30,6 +30,7 @@ class AuthDirectiveVisitor<
   | DirectiveLocation.QUERY
   | DirectiveLocation.OBJECT
   | DirectiveLocation.FIELD_DEFINITION
+  | DirectiveLocation.MUTATION
 > {
   public errorMessage = 'Unauthenticated';
 
@@ -83,7 +84,7 @@ class AuthDirectiveVisitor<
     query: GraphQLObjectType<unknown, TContext>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): void {
+  ): GraphQLObjectType<unknown, TContext> {
     const fields = Object.values(query.getFields());
     fields.forEach(field => {
       const [directive] = getDirective(schema, field, directiveName) ?? [];
@@ -91,6 +92,23 @@ class AuthDirectiveVisitor<
         this.visitFieldDefinition(field);
       }
     });
+
+    return query;
+  }
+
+  public visitMutation(
+    query: GraphQLObjectType<unknown, TContext>,
+    schema: GraphQLSchema,
+    directiveName: string,
+  ): GraphQLObjectType<unknown, TContext> {
+    const fields = Object.values(query.getFields());
+    fields.forEach(field => {
+      const [directive] = getDirective(schema, field, directiveName) ?? [];
+      if (directive) {
+        this.visitFieldDefinition(field);
+      }
+    });
+    return query;
   }
 }
 

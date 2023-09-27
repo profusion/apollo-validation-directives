@@ -1,5 +1,4 @@
 import {
-  isInputObjectType,
   defaultFieldResolver,
   DirectiveLocation,
   GraphQLEnumType,
@@ -9,6 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLString,
+  isInputObjectType,
 } from 'graphql';
 import type {
   DocumentNode,
@@ -715,6 +715,97 @@ const wrapFieldsRequiringValidation = <TContext>(
   );
 
 /**
+ * Receives an input object and search for directives on it's fields.
+ * Calls visitor.visitInputFieldDefinition() for each fields containing a directive
+ *
+ * @param {GraphQLInputObjectType} inputObject Array of GraphQLFields
+ * @param {GraphQLSchema} schema GraphQLSchema in use
+ * @param {string} directiveName Name of the directive to search for
+ * @param {ValidateDirectiveVisitor} visitor An instance of the visitor implementing visitInputFieldDefinition()
+ */
+const visitInputFieldsWithDirective = <
+  TArgs extends ValidationDirectiveArgs,
+  TContext extends object,
+>(
+  inputObject: GraphQLInputObjectType,
+  schema: GraphQLSchema,
+  directiveName: string,
+  visitor: ValidateDirectiveVisitor<TArgs, TContext>,
+): void => {
+  Object.values(inputObject.getFields()).forEach(field => {
+    const [directiveArgs] = getDirective(schema, field, directiveName) ?? [];
+    if (directiveArgs) {
+      // eslint-disable-next-line no-param-reassign
+      visitor.args = directiveArgs as TArgs;
+      visitor.visitInputFieldDefinition(field, { objectType: inputObject });
+    }
+  });
+};
+
+/**
+ * Search for directive usage on input objects and fields.
+ * Calls visitor.visitInputObject() for objects using directive and visitInputFieldDefinition() for fields
+ *
+ * @param {GraphQLSchema} schema GraphQLSchema in use
+ * @param {string} directiveName Name of the directive to search for
+ * @param {ValidateDirectiveVisitor} visitor An instance of the visitor implementing visitInputObject()
+ */
+const visitInputObjectsAndFieldsWithDirective = <
+  TArgs extends ValidationDirectiveArgs,
+  TContext extends object,
+>(
+  schema: GraphQLSchema,
+  directiveName: string,
+  visitor: ValidateDirectiveVisitor<TArgs, TContext>,
+): void => {
+  Object.values(schema.getTypeMap()).forEach(type => {
+    if (isInputObjectType(type)) {
+      visitInputFieldsWithDirective(type, schema, directiveName, visitor);
+
+      const [directiveArgsOnInputObject] =
+        getDirective(schema, type, directiveName) ?? [];
+      if (directiveArgsOnInputObject) {
+        // eslint-disable-next-line no-param-reassign
+        visitor.args = directiveArgsOnInputObject as TArgs;
+        visitor.visitInputObject(type);
+      }
+    }
+  });
+};
+
+/**
+ * Receives an array of GraphQLField and search for directives on their arguments.
+ * Calls visitor.visitArgumentDefinition for each argument having a directive
+ *
+ * @param {Array<GraphQLField>} fields Array of GraphQLFields
+ * @param {GraphQLSchema} schema GraphQLSchema in use
+ * @param {string} directiveName Name of the directive to search for
+ * @param {ValidateDirectiveVisitor} visitor An instance of the visitor implementing visitArgumentDefinition()
+ */
+const visitArgumentsWithDirectiveInObjectFields = <
+  TArgs extends ValidationDirectiveArgs,
+  TContext extends object,
+>(
+  fields: Array<GraphQLField<unknown, TContext, TArgs>>,
+  schema: GraphQLSchema,
+  directiveName: string,
+  visitor: ValidateDirectiveVisitor<TArgs, TContext>,
+): void => {
+  fields.forEach(field => {
+    if (field.args.length > 0) {
+      field.args.forEach(arg => {
+        const [directiveOnArg] = getDirective(schema, arg, directiveName) ?? [];
+        if (directiveOnArg) {
+          // eslint-disable-next-line no-param-reassign
+          visitor.args = directiveOnArg as TArgs;
+          visitor.visitArgumentDefinition(arg, { field });
+        }
+      });
+    }
+  });
+};
+
+/**
  * Abstract class to implement value validation in both input and output values
  *
  * This is a general framework inspired by
@@ -759,6 +850,7 @@ abstract class ValidateDirectiveVisitor<
   TArgs,
   TContext,
   | DirectiveLocation.QUERY
+  | DirectiveLocation.MUTATION
   | DirectiveLocation.ARGUMENT_DEFINITION
   | DirectiveLocation.INPUT_FIELD_DEFINITION
   | DirectiveLocation.INPUT_OBJECT
@@ -989,78 +1081,41 @@ abstract class ValidateDirectiveVisitor<
     query: GraphQLObjectType<unknown, TContext>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): void {
-    const fields = Object.values(query.getFields());
-    fields.forEach(field => {
-      const [directive] = getDirective(schema, field, directiveName) ?? [];
-      if (directive) {
-        this.args = directive as TArgs;
-        this.visitFieldDefinition(field, { objectType: query });
-      }
-
-      field.args.forEach(arg => {
-        const [directiveOnArg] = getDirective(schema, arg, directiveName) ?? [];
-        if (directiveOnArg) {
-          this.args = directiveOnArg as TArgs;
-          this.visitArgumentDefinition(arg, { field });
-        }
-
-        const finalType = getFinalType(arg.type);
-        if (isInputObjectType(finalType)) {
-          this.visitInputFieldsRecursively(
-            finalType,
-            field,
-            arg,
-            schema,
-            directiveName,
-          );
-        }
-      });
-    });
-
+  ): GraphQLObjectType<unknown, TContext> {
+    const queryFields = Object.values(query.getFields());
+    visitInputObjectsAndFieldsWithDirective(schema, directiveName, this);
+    visitArgumentsWithDirectiveInObjectFields(
+      queryFields,
+      schema,
+      directiveName,
+      this,
+    );
     wrapFieldsRequiringValidation(
-      fields,
+      queryFields,
       ValidateDirectiveVisitor.validationErrorsArgumentName,
     );
+    return query;
   }
 
-  private visitInputFieldsRecursively = (
-    inputObject: GraphQLInputObjectType,
-    queryField: GraphQLField<unknown, TContext, unknown>,
-    arg: GraphQLArgument,
+  // eslint-disable-next-line class-methods-use-this
+  public visitMutation(
+    mutation: GraphQLObjectType<unknown, TContext>,
     schema: GraphQLSchema,
     directiveName: string,
-    path: string[] = [],
-  ): void => {
-    const [directive] = getDirective(schema, inputObject, directiveName) ?? [];
-
-    if (directive) {
-      this.args = directive as TArgs;
-      this.visitInputObject(inputObject);
-    }
-
-    Object.values(inputObject.getFields()).forEach(inputField => {
-      const [directiveOnInputField] =
-        getDirective(schema, inputField, directiveName) ?? [];
-
-      if (directiveOnInputField) {
-        this.args = directiveOnInputField as TArgs;
-        this.visitInputFieldDefinition(inputField, { objectType: inputObject });
-      }
-
-      const inputFieldType = getFinalType(inputField.type);
-      if (isInputObjectType(inputFieldType)) {
-        this.visitInputFieldsRecursively(
-          inputFieldType,
-          queryField,
-          arg,
-          schema,
-          directiveName,
-          [...path, inputField.name],
-        );
-      }
-    });
-  };
+  ): GraphQLObjectType<unknown, TContext> {
+    const mutationFields = Object.values(mutation.getFields());
+    visitArgumentsWithDirectiveInObjectFields(
+      mutationFields,
+      schema,
+      directiveName,
+      this,
+    );
+    wrapFieldsRequiringValidation(
+      mutationFields,
+      ValidateDirectiveVisitor.validationErrorsArgumentName,
+    );
+    return mutation;
+  }
 }
 
 export default ValidateDirectiveVisitor;

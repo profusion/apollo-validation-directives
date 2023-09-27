@@ -359,7 +359,16 @@ abstract class EasyDirectiveVisitor<
     query: GraphQLObjectType<any, TContext>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): TLocation extends DirectiveLocation.QUERY ? void : never {
+  ): GraphQLObjectType<any, TContext> {
+    throw new Error('Method not implemented.');
+  }
+
+  // istanbul ignore next (should be overridden and never reached)
+  public visitMutation(
+    mutation: GraphQLObjectType<any, TContext>,
+    schema: GraphQLSchema,
+    directiveName: string,
+  ): GraphQLObjectType<any, TContext> {
     throw new Error('Method not implemented.');
   }
   /* eslint-enable class-methods-use-this, class-methods-use-this, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
