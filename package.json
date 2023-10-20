@@ -22,6 +22,66 @@
       "types": "./build/types/index.d.ts",
       "import": "./build/esm/index.js",
       "require": "./build/cjs/index.js"
+    },
+    "./hasPermissions": {
+      "types": "./build/types/hasPermissions.d.ts",
+      "import": "./build/esm/hasPermissions.js",
+      "require": "./build/cjs/hasPermissions.js"
+    },
+    "./auth": {
+      "types": "./build/types/auth.d.ts",
+      "import": "./build/esm/auth.js",
+      "require": "./build/cjs/auth.js"
+    },
+    "./capitalize": {
+      "types": "./build/types/capitalize.d.ts",
+      "import": "./build/esm/capitalize.js",
+      "require": "./build/cjs/capitalize.js"
+    },
+    "./cleanupPattern": {
+      "types": "./build/types/cleanupPattern.d.ts",
+      "import": "./build/esm/cleanupPattern.js",
+      "require": "./build/cjs/cleanupPattern.js"
+    },
+    "./foreignNodeId": {
+      "types": "./build/types/foreignNodeId.d.ts",
+      "import": "./build/esm/foreignNodeId.js",
+      "require": "./build/cjs/foreignNodeId.js"
+    },
+    "./listLength": {
+      "types": "./build/types/listLength.d.ts",
+      "import": "./build/esm/listLength.js",
+      "require": "./build/cjs/listLength.js"
+    },
+    "./pattern": {
+      "types": "./build/types/pattern.d.ts",
+      "import": "./build/esm/pattern.js",
+      "require": "./build/cjs/pattern.js"
+    },
+    "./range": {
+      "types": "./build/types/range.d.ts",
+      "import": "./build/esm/range.js",
+      "require": "./build/cjs/range.js"
+    },
+    "./selfNodeId": {
+      "types": "./build/types/selfNodeId.d.ts",
+      "import": "./build/esm/selfNodeId.js",
+      "require": "./build/cjs/selfNodeId.js"
+    },
+    "./stringLength": {
+      "types": "./build/types/stringLength.d.ts",
+      "import": "./build/esm/stringLength.js",
+      "require": "./build/cjs/stringLength.js"
+    },
+    "./trim": {
+      "types": "./build/types/trim.d.ts",
+      "import": "./build/esm/trim.js",
+      "require": "./build/cjs/trim.js"
+    },
+    "./applyDirectivesToSchema": {
+      "types": "./build/types/utils/applyDirectivesToSchema.d.ts",
+      "import": "./build/esm/utils/applyDirectivesToSchema.js",
+      "require": "./build/cjs/utils/applyDirectivesToSchema.js"
     }
   },
   "scripts": {
