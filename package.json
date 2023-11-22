@@ -1,6 +1,6 @@
 {
   "name": "@profusion/apollo-validation-directives",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "GraphQL directives to implement field validations in Apollo Server",
   "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
   "license": "MIT",
