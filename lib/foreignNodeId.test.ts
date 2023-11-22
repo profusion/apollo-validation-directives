@@ -256,6 +256,71 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     expect(result).toEqual({ data: rootValue });
   });
 
+  it('should decode arguments in type field argument', async (): Promise<void> => {
+    const schema = new ForeignNodeId().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Query: {},
+          TestType: {
+            typeIds: (_, { ids }) => {
+              return ids;
+            },
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+            type TestType {
+              typeIds(
+                ids: [ID!]! @foreignNodeId(typename: "TypeID")
+                otherArgs: String
+              ): [String!]!
+            }
+            type Query {
+              testType: TestType!
+              unusedQuery: TestType!
+            }
+          `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      query MyQuery($typeIds: [ID!]!) {
+        testType {
+          typeIds(ids: $typeIds)
+        }
+      }
+    `);
+    const decodedIds = ['123', '345', '678', '910'];
+    const encodedIds = decodedIds.map(id => toNodeId('TypeID', id));
+    const variableValues = {
+      typeIds: encodedIds,
+    };
+    const rootValue = {
+      testType: {},
+    };
+
+    const contextValue = ForeignNodeId.createDirectiveContext({
+      fromNodeId,
+    });
+    const spy = jest.spyOn(contextValue, 'fromNodeId');
+    const result = await graphql({
+      contextValue,
+      rootValue,
+      schema,
+      source,
+      variableValues,
+    });
+    expect(spy).toHaveBeenCalledTimes(encodedIds.length);
+    expect(result).toEqual({
+      data: {
+        testType: {
+          typeIds: decodedIds,
+        },
+      },
+    });
+  });
+
   it('should work when used on mutation inputs', async (): Promise<void> => {
     const mockResolver = jest.fn().mockReturnValue('return value');
     const typeName = 'MyType';

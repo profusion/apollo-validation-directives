@@ -2,6 +2,7 @@ import type { SchemaMapper } from '@graphql-tools/utils';
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils';
 import type {
   DirectiveLocation,
+  GraphQLArgument,
   GraphQLFieldConfig,
   GraphQLObjectType,
   GraphQLSchema,
@@ -26,6 +27,17 @@ export const createMapper = <T extends DirectiveLocation>(
     return mutation;
   },
   [MapperKind.OBJECT_TYPE](type, schema): GraphQLObjectType {
+    Object.values(type.getFields()).forEach(field => {
+      field.args.forEach(arg => {
+        const [directive] = getDirective(schema, arg, directiveName) ?? [];
+        if (!directive) return;
+        // eslint-disable-next-line no-param-reassign
+        visitor.args = directive;
+        visitor.visitArgumentDefinition(arg as GraphQLArgument, {
+          field,
+        });
+      });
+    });
     const [directive] = getDirective(schema, type, directiveName) ?? [];
     if (!directive) return type;
     // eslint-disable-next-line no-param-reassign
