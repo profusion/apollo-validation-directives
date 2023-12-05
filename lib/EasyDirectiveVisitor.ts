@@ -355,22 +355,18 @@ abstract class EasyDirectiveVisitor<
   }
 
   // istanbul ignore next (should be overridden and never reached)
-  public visitQuery(
-    query: GraphQLObjectType<any, TContext>,
+  public visitObjectFieldsAndArgumentInputs(
+    object: GraphQLObjectType<unknown, unknown>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): GraphQLObjectType<any, TContext> {
+  ): GraphQLObjectType<unknown, unknown> {
     throw new Error('Method not implemented.');
   }
 
-  // istanbul ignore next (should be overridden and never reached)
-  public visitMutation(
-    mutation: GraphQLObjectType<any, TContext>,
+  public addInputTypesValidations(
     schema: GraphQLSchema,
     directiveName: string,
-  ): GraphQLObjectType<any, TContext> {
-    throw new Error('Method not implemented.');
-  }
+  ): void {}
   /* eslint-enable class-methods-use-this, class-methods-use-this, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 
   public applyToSchema(schema: GraphQLSchema): GraphQLSchema {

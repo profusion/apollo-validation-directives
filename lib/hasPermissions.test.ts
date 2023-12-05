@@ -1430,13 +1430,11 @@ enum HasPermissionsDirectivePolicy {
       public static readonly defaultName: string = 'injectMissingPermissions';
 
       // eslint-disable-next-line class-methods-use-this
-      public visitQuery(
-        query: GraphQLObjectType<unknown, unknown>,
-      ): GraphQLObjectType<unknown, unknown> {
-        const field = query.getFields().test;
+      public override visitFieldDefinition(
+        field: GraphQLFieldConfig<unknown, unknown, unknown>,
+      ): GraphQLFieldConfig<unknown, unknown, unknown> {
         const { resolve = defaultFieldResolver } = field;
         // eslint-disable-next-line no-param-reassign
-
         field.resolve = function (obj, args, context, info): unknown {
           const enhancedInfo = {
             ...info,
@@ -1444,15 +1442,14 @@ enum HasPermissionsDirectivePolicy {
           };
           return resolve.apply(this, [obj, args, context, enhancedInfo]);
         };
-
-        return query;
+        return field;
       }
 
       // eslint-disable-next-line class-methods-use-this
-      public visitFieldDefinition(
-        field: GraphQLFieldConfig<unknown, unknown, unknown>,
-      ): GraphQLFieldConfig<unknown, unknown, unknown> {
-        return field;
+      public override visitObjectFieldsAndArgumentInputs(
+        object: GraphQLObjectType<unknown, unknown>,
+      ): GraphQLObjectType<unknown, unknown> {
+        return object;
       }
     }
 

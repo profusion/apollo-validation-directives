@@ -5,10 +5,7 @@ import type {
   GraphQLInterfaceType,
   GraphQLObjectType,
   GraphQLFieldConfig,
-  GraphQLSchema,
 } from 'graphql';
-
-import { getDirective } from '@graphql-tools/utils';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
 import AuthenticationError from './errors/AuthenticationError.js';
@@ -80,35 +77,10 @@ class AuthDirectiveVisitor<
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public visitQuery(
-    query: GraphQLObjectType<unknown, TContext>,
-    schema: GraphQLSchema,
-    directiveName: string,
-  ): GraphQLObjectType<unknown, TContext> {
-    const fields = Object.values(query.getFields());
-    fields.forEach(field => {
-      const [directive] = getDirective(schema, field, directiveName) ?? [];
-      if (directive) {
-        this.visitFieldDefinition(field);
-      }
-    });
-
-    return query;
-  }
-
-  public visitMutation(
-    query: GraphQLObjectType<unknown, TContext>,
-    schema: GraphQLSchema,
-    directiveName: string,
-  ): GraphQLObjectType<unknown, TContext> {
-    const fields = Object.values(query.getFields());
-    fields.forEach(field => {
-      const [directive] = getDirective(schema, field, directiveName) ?? [];
-      if (directive) {
-        this.visitFieldDefinition(field);
-      }
-    });
-    return query;
+  public visitObjectFieldsAndArgumentInputs(
+    object: GraphQLObjectType<unknown, unknown>,
+  ): GraphQLObjectType<unknown, unknown> {
+    return object;
   }
 }
 

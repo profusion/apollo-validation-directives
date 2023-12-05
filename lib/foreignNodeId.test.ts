@@ -440,4 +440,77 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
     expect(fromNodeIdSpy).toHaveBeenCalledTimes(1);
     expect(fromNodeIdSpy).toHaveBeenCalledWith(encodedId);
   });
+
+  it('should be applied ', async () => {
+    const typeName = 'MyType';
+    const decodedIds = ['abc', '123e'];
+    const encodedIds = decodedIds.map(toNodeId.bind(null, typeName));
+    const schema = new ForeignNodeId().applyToSchema(
+      makeExecutableSchema({
+        resolvers: {
+          Query: {
+            users: () => [{}],
+          },
+          User: {
+            dummyField: () => 'hi',
+            fieldWithInput: (_, { input: { typeIds } }) => typeIds,
+          },
+        },
+        typeDefs: [
+          ...directiveTypeDefs,
+          gql`
+            input DummyInput {
+              field: String
+            }
+            input Input1 {
+              typeIds: [ID!]! @foreignNodeId(typename: "${typeName}")
+            }
+            type User {
+              dummyField(input: DummyInput): String
+              fieldWithInput(input: Input1!): [String!]!
+            }
+            type Query {
+              users: [User!]!
+            }
+          `,
+        ],
+      }),
+    );
+    const source = print(gql`
+      query Test($input: Input1!) {
+        users {
+          dummyField
+          fieldWithInput(input: $input)
+        }
+      }
+    `);
+    const contextValue = ForeignNodeId.createDirectiveContext({
+      fromNodeId,
+    });
+    const fromNodeIdSpy = jest.spyOn(contextValue, 'fromNodeId');
+
+    const result = await graphql({
+      contextValue,
+      schema,
+      source,
+      variableValues: {
+        input: {
+          typeIds: encodedIds,
+        },
+      },
+    });
+
+    expect(fromNodeIdSpy).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      data: {
+        users: [
+          {
+            dummyField: 'hi',
+            fieldWithInput: decodedIds,
+          },
+        ],
+      },
+      error: undefined,
+    });
+  });
 });

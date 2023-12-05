@@ -737,7 +737,10 @@ const visitInputFieldsWithDirective = <
     if (directiveArgs) {
       // eslint-disable-next-line no-param-reassign
       visitor.args = directiveArgs as TArgs;
-      visitor.visitInputFieldDefinition(field, { objectType: inputObject });
+      // @ts-expect-error field added by MapperKind.OBJECT_TYPE to avoid wrapping input type validation twice
+      if (!field.visited) {
+        visitor.visitInputFieldDefinition(field, { objectType: inputObject });
+      }
     }
   });
 };
@@ -1077,44 +1080,27 @@ abstract class ValidateDirectiveVisitor<
     });
   }
 
-  public visitQuery(
-    query: GraphQLObjectType<unknown, TContext>,
+  public visitObjectFieldsAndArgumentInputs(
+    object: GraphQLObjectType<unknown, unknown>,
     schema: GraphQLSchema,
     directiveName: string,
-  ): GraphQLObjectType<unknown, TContext> {
-    const queryFields = Object.values(query.getFields());
-    visitInputObjectsAndFieldsWithDirective(schema, directiveName, this);
+  ): GraphQLObjectType<unknown, unknown> {
+    const typeFields = Object.values(object.getFields());
     visitArgumentsWithDirectiveInObjectFields(
-      queryFields,
+      typeFields,
       schema,
       directiveName,
       this,
     );
     wrapFieldsRequiringValidation(
-      queryFields,
+      typeFields,
       ValidateDirectiveVisitor.validationErrorsArgumentName,
     );
-    return query;
+    return object;
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  public visitMutation(
-    mutation: GraphQLObjectType<unknown, TContext>,
-    schema: GraphQLSchema,
-    directiveName: string,
-  ): GraphQLObjectType<unknown, TContext> {
-    const mutationFields = Object.values(mutation.getFields());
-    visitArgumentsWithDirectiveInObjectFields(
-      mutationFields,
-      schema,
-      directiveName,
-      this,
-    );
-    wrapFieldsRequiringValidation(
-      mutationFields,
-      ValidateDirectiveVisitor.validationErrorsArgumentName,
-    );
-    return mutation;
+  addInputTypesValidations(schema: GraphQLSchema, directiveName: string): void {
+    visitInputObjectsAndFieldsWithDirective(schema, directiveName, this);
   }
 }
 
