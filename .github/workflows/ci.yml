@@ -28,7 +28,7 @@ jobs:
       with:
         node-version-file: .nvmrc
         cache: yarn
-    - run: yarn --frozen-lockfile
+    - run: yarn --immutable
     - run: yarn install-peers -f
     - run: yarn lint
     - run: yarn build
