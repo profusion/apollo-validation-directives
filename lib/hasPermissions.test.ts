@@ -512,7 +512,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg: {
@@ -545,7 +545,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg3: {
@@ -617,7 +617,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg4: {
@@ -648,7 +648,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg5: {
@@ -682,7 +682,7 @@ enum HasPermissionsDirectivePolicy {
             new GraphQLError(`Missing Permissions: ${defaultValuePermission}`),
           ],
         });
-        expect(mockResolver).not.toBeCalled();
+        expect(mockResolver).not.toHaveBeenCalled();
       });
 
       it('if NOT has permissions for a field with THROW policy, returns null and do not call field resolver', async (): Promise<void> => {
@@ -702,7 +702,7 @@ enum HasPermissionsDirectivePolicy {
           },
           errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
-        expect(mockResolver).not.toBeCalled();
+        expect(mockResolver).not.toHaveBeenCalled();
       });
 
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
@@ -721,7 +721,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg: {
@@ -759,7 +759,7 @@ enum HasPermissionsDirectivePolicy {
             new GraphQLError(`Missing Permissions: ${defaultValuePermission}`),
           ],
         });
-        expect(mockResolver).not.toBeCalled();
+        expect(mockResolver).not.toHaveBeenCalled();
       });
     });
 
@@ -1086,7 +1086,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg1: { xyInput: 42 },
@@ -1114,7 +1114,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg1: { xyInput: 2 },
@@ -1143,7 +1143,7 @@ enum HasPermissionsDirectivePolicy {
           },
           errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
-        expect(mockResolver).not.toBeCalled();
+        expect(mockResolver).not.toHaveBeenCalled();
       });
 
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
@@ -1162,7 +1162,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg1: { xyInput: 42 },
@@ -1235,7 +1235,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg: true,
@@ -1263,7 +1263,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg: true,
@@ -1292,7 +1292,7 @@ enum HasPermissionsDirectivePolicy {
           },
           errors: [new ForbiddenError(`Missing Permissions: ${permissionX}`)],
         });
-        expect(mockResolver).not.toBeCalled();
+        expect(mockResolver).not.toHaveBeenCalled();
       });
 
       it('if NOT has permissions for a field with RESOLVE policy, calls field resolver with original argument and missing permissions', async (): Promise<void> => {
@@ -1311,7 +1311,7 @@ enum HasPermissionsDirectivePolicy {
             test: 'resolverReturn',
           },
         });
-        expect(mockResolver).toBeCalledWith(
+        expect(mockResolver).toHaveBeenCalledWith(
           undefined,
           {
             arg: true,

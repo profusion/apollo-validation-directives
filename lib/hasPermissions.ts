@@ -16,7 +16,7 @@ import {
   isInputObjectType,
 } from 'graphql';
 
-import isEqual from 'lodash.isequal';
+import { isDeepStrictEqual } from 'node:util';
 
 import EasyDirectiveVisitor from './EasyDirectiveVisitor.js';
 import ForbiddenError from './errors/ForbiddenError.js';
@@ -242,7 +242,7 @@ export class HasPermissionsDirectiveVisitor<
         }
 
         const defaultValue = getDefaultValue(container, path);
-        if (isEqual(value, defaultValue)) {
+        if (isDeepStrictEqual(value, defaultValue)) {
           return value;
         }
       }

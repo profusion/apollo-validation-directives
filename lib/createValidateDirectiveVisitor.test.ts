@@ -53,8 +53,8 @@ describe('createValidateDirectiveVisitor', (): void => {
         list: rootValue.list.map(x => x * 2),
       },
     });
-    expect(validate).toBeCalledTimes(3);
-    expect(createValidate).toBeCalledTimes(2);
+    expect(validate).toHaveBeenCalledTimes(3);
+    expect(createValidate).toHaveBeenCalledTimes(2);
   });
 
   it('custom', async (): Promise<void> => {
@@ -119,7 +119,7 @@ describe('createValidateDirectiveVisitor', (): void => {
         list: rootValue.list,
       },
     });
-    expect(validate).toBeCalledTimes(2);
-    expect(createValidate).toBeCalledTimes(2);
+    expect(validate).toHaveBeenCalledTimes(2);
+    expect(createValidate).toHaveBeenCalledTimes(2);
   });
 });

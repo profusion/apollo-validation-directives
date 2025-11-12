@@ -342,8 +342,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { validated: value * 2 },
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           value,
           GraphQLInt,
           expect.objectContaining({ name: 'Query' }),
@@ -352,7 +352,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           undefined,
           { arg: value },
         );
-        expect(mockResolver).toBeCalledTimes(1);
+        expect(mockResolver).toHaveBeenCalledTimes(1);
       });
 
       it('works with default resolver', async (): Promise<void> => {
@@ -370,8 +370,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { defaultResolver: 42 * 2 },
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           42,
           GraphQLInt,
           expect.any(Object),
@@ -401,8 +401,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           data: { validated: null },
           errors: [new ValidationError('forced error')],
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           value,
           GraphQLInt,
           expect.any(Object),
@@ -411,7 +411,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           undefined,
           { arg: value },
         );
-        expect(mockResolver).toBeCalledTimes(1);
+        expect(mockResolver).toHaveBeenCalledTimes(1);
       });
 
       it('calls directive if validated, handles undefined', async (): Promise<void> => {
@@ -431,8 +431,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           data: { validated: null },
           errors: [new ValidationError('validation returned undefined')],
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           value,
           GraphQLInt,
           expect.any(Object),
@@ -441,7 +441,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           undefined,
           { arg: value },
         );
-        expect(mockResolver).toBeCalledTimes(1);
+        expect(mockResolver).toHaveBeenCalledTimes(1);
       });
 
       it('calls directive if validated, handles modifiers', async (): Promise<void> => {
@@ -469,8 +469,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { validatedModifiers: [value * 2, 42 * 2, null] },
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           [value, 42, null],
           GraphQLIntList,
           expect.any(Object),
@@ -479,7 +479,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           undefined,
           { arg: [value, 42, null] },
         );
-        expect(mockResolver).toBeCalledTimes(1);
+        expect(mockResolver).toHaveBeenCalledTimes(1);
       });
 
       it('does NOT call directive if validation is undefined', async (): Promise<void> => {
@@ -496,8 +496,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { notValidated: value },
         });
-        expect(mockValidate).not.toBeCalled();
-        expect(mockResolver).toBeCalledTimes(1);
+        expect(mockValidate).not.toHaveBeenCalled();
+        expect(mockResolver).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -560,8 +560,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { allValidated: { value: rootValue.allValidated.value * 2 } },
         });
-        expect(mockValidate).toBeCalledTimes(1);
-        expect(mockValidate).toBeCalledWith(
+        expect(mockValidate).toHaveBeenCalledTimes(1);
+        expect(mockValidate).toHaveBeenCalledWith(
           12,
           GraphQLInt,
           AllValidatedType,
@@ -590,7 +590,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         expect(result).toEqual({
           data: { allNotValidated: rootValue.allNotValidated },
         });
-        expect(mockValidate).not.toBeCalled();
+        expect(mockValidate).not.toHaveBeenCalled();
       });
     });
 
@@ -704,8 +704,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullable: value },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLNonNullInt,
             {
@@ -719,7 +719,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with non-nullable variables', async (): Promise<void> => {
@@ -739,8 +739,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullable: value },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLNonNullInt,
             {
@@ -754,7 +754,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with non-nullable enum', async (): Promise<void> => {
@@ -771,8 +771,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullableEnum: 'someOption' },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
             {
@@ -786,7 +786,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: 'someOption' },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nonNullableListOfNonNullable', async (): Promise<void> => {
@@ -803,8 +803,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullableListOfNonNullable: [value, 42] },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
             {
@@ -818,7 +818,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [value, 42] },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nonNullableListOfNullable', async (): Promise<void> => {
@@ -835,8 +835,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nonNullableListOfNullable: [null, value] },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [null, value],
             GraphQLNonNullIntList,
             {
@@ -850,7 +850,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [null, value] },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nullable (value)', async (): Promise<void> => {
@@ -867,8 +867,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullable: value },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -882,7 +882,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nullable (null)', async (): Promise<void> => {
@@ -899,8 +899,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullable: null },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             null,
             GraphQLInt,
             {
@@ -914,7 +914,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: null },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nullableListOfNullable (value)', async (): Promise<void> => {
@@ -931,8 +931,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullableListOfNullable: [value, null] },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [value, null],
             GraphQLIntList,
             {
@@ -946,7 +946,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [value, null] },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with nullableListOfNullable (null)', async (): Promise<void> => {
@@ -963,8 +963,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             null,
             GraphQLIntList,
             {
@@ -978,7 +978,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: null },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with no validation', async (): Promise<void> => {
@@ -995,8 +995,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { notValidated: value },
           });
-          expect(mockValidate).not.toBeCalled();
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockValidate).not.toHaveBeenCalled();
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works if validation is undefined', async (): Promise<void> => {
@@ -1013,8 +1013,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { alsoNotValidated: value },
           });
-          expect(mockValidate).not.toBeCalled();
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockValidate).not.toHaveBeenCalled();
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with someArgsNotValidated', async (): Promise<void> => {
@@ -1031,8 +1031,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { someArgsNotValidated: value },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1046,7 +1046,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value, notValidated: 12 },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with manyArgsValidated', async (): Promise<void> => {
@@ -1063,8 +1063,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { manyArgsValidated: value },
           });
-          expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(2);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1078,7 +1078,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['arg'],
           );
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledWith(
             12,
             GraphQLInt,
             {
@@ -1092,7 +1092,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['alsoValidated'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
 
         it('works with deepNonNullable', async (): Promise<void> => {
@@ -1120,8 +1120,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               },
             },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [{ nonNullable: 1 }],
             new GraphQLList(
               new GraphQLNonNull(
@@ -1158,8 +1158,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { defaultResolver: 42 },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1192,8 +1192,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { doubleValidation: value * 4 },
           });
-          expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(2);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1207,7 +1207,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledWith(
             value * 2,
             GraphQLInt,
             {
@@ -1221,7 +1221,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value * 2 },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1258,8 +1258,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLNonNullInt,
             {
@@ -1273,7 +1273,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with non-nullable (validation returns undefined)', async (): Promise<void> => {
@@ -1293,8 +1293,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             data: { nonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('validation returned undefined')],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLNonNullInt,
             {
@@ -1308,7 +1308,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with non-nullable (validation returns invalid scalar)', async (): Promise<void> => {
@@ -1332,8 +1332,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               ),
             ],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLNonNullInt,
             {
@@ -1347,7 +1347,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with non-nullable enum (invalid value)', async (): Promise<void> => {
@@ -1371,8 +1371,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               ),
             ],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             'someOption',
             new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
             {
@@ -1386,7 +1386,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: 'someOption' },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with nonNullableListOfNonNullable', async (): Promise<void> => {
@@ -1404,8 +1404,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             data: { nonNullableListOfNonNullable: null }, // only arg is non-nullable!
             errors: [new ValidationError('forced error')],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
             {
@@ -1419,7 +1419,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [value, 42] },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with nonNullableListOfNonNullable (null element)', async (): Promise<void> => {
@@ -1441,8 +1441,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               new ValidationError('received null where non-null is required'),
             ],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [value, 42],
             GraphQLNonNullIntListNonNull,
             {
@@ -1456,7 +1456,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [value, 42] },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with nonNullableListOfNullable', async (): Promise<void> => {
@@ -1474,8 +1474,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             data: { nonNullableListOfNullable: null },
             errors: [new ValidationError('forced error')],
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [null, value],
             GraphQLNonNullIntList,
             {
@@ -1489,7 +1489,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [null, value] },
             ['arg'],
           );
-          expect(mockResolver).not.toBeCalled();
+          expect(mockResolver).not.toHaveBeenCalled();
         });
 
         it('works with nullable', async (): Promise<void> => {
@@ -1506,8 +1506,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullable: null },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1521,8 +1521,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
-          expect(mockResolver).toBeCalledWith(
+          expect(mockResolver).toHaveBeenCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledWith(
             undefined,
             {
               arg: null,
@@ -1548,8 +1548,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { nullableListOfNullable: null },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [value, null],
             GraphQLIntList,
             {
@@ -1563,8 +1563,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: [value, null] },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
-          expect(mockResolver).toBeCalledWith(
+          expect(mockResolver).toHaveBeenCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledWith(
             undefined,
             {
               arg: null,
@@ -1588,8 +1588,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { someArgsNotValidated: null },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1603,8 +1603,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { arg: value, notValidated: 12 },
             ['arg'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
-          expect(mockResolver).toBeCalledWith(
+          expect(mockResolver).toHaveBeenCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledWith(
             undefined,
             {
               arg: null,
@@ -1629,8 +1629,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
-          expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(2);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1644,7 +1644,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['arg'],
           );
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledWith(
             12,
             GraphQLInt,
             {
@@ -1658,8 +1658,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['alsoValidated'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
-          expect(mockResolver).toBeCalledWith(
+          expect(mockResolver).toHaveBeenCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledWith(
             undefined,
             {
               alsoValidated: 12, // mockImplementationOnce() so only first fails
@@ -1687,8 +1687,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(result).toEqual({
             data: { manyArgsValidated: null },
           });
-          expect(mockValidate).toBeCalledTimes(2);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(2);
+          expect(mockValidate).toHaveBeenCalledWith(
             value,
             GraphQLInt,
             {
@@ -1702,7 +1702,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['arg'],
           );
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledWith(
             12,
             GraphQLInt,
             {
@@ -1716,8 +1716,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             { alsoValidated: 12, arg: value },
             ['alsoValidated'],
           );
-          expect(mockResolver).toBeCalledTimes(1);
-          expect(mockResolver).toBeCalledWith(
+          expect(mockResolver).toHaveBeenCalledTimes(1);
+          expect(mockResolver).toHaveBeenCalledWith(
             undefined,
             {
               alsoValidated: null,
@@ -1772,8 +1772,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
               },
             },
           });
-          expect(mockValidate).toBeCalledTimes(1);
-          expect(mockValidate).toBeCalledWith(
+          expect(mockValidate).toHaveBeenCalledTimes(1);
+          expect(mockValidate).toHaveBeenCalledWith(
             [{ nonNullable: 1 }],
             new GraphQLList(
               new GraphQLNonNull(
@@ -1883,8 +1883,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(result).toEqual({
         data: { allValidated: { value: rootValue.allValidated.value } },
       });
-      expect(mockValidate).toBeCalledTimes(1);
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledTimes(1);
+      expect(mockValidate).toHaveBeenCalledWith(
         undefined,
         GraphQLInt,
         AllValidatedType,
@@ -1913,8 +1913,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
       expect(result).toEqual({
         data: { fieldValidated: { ...rootValue.fieldValidated } },
       });
-      expect(mockValidate).toBeCalledTimes(1);
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledTimes(1);
+      expect(mockValidate).toHaveBeenCalledWith(
         undefined,
         GraphQLInt,
         expect.any(Object),
@@ -2033,8 +2033,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           },
         },
       });
-      expect(mockValidate).toBeCalledTimes(1);
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledTimes(1);
+      expect(mockValidate).toHaveBeenCalledWith(
         value,
         GraphQLNonNullInt,
         expect.any(Object),
@@ -2044,7 +2044,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         { arg: [{ nonNullable: value, notValidated: 42 }] },
         ['arg', '0', 'nonNullable'],
       );
-      expect(mockResolver).toBeCalledTimes(1);
+      expect(mockResolver).toHaveBeenCalledTimes(1);
     });
 
     it('works with deepNullable', async (): Promise<void> => {
@@ -2130,8 +2130,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           },
         },
       });
-      expect(mockValidate).toBeCalledTimes(2);
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledTimes(2);
+      expect(mockValidate).toHaveBeenCalledWith(
         value,
         GraphQLInt,
         expect.any(Object),
@@ -2144,7 +2144,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         },
         ['arg', '0', 'nullable'],
       );
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         { list: [1] },
         schema.getType('NoValidatedFields') as GraphQLInputType,
         {
@@ -2161,7 +2161,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         },
         ['other'],
       );
-      expect(mockResolver).toBeCalledTimes(1);
+      expect(mockResolver).toHaveBeenCalledTimes(1);
     });
 
     it('works with double validation', async (): Promise<void> => {
@@ -2233,8 +2233,8 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           },
         },
       });
-      expect(mockValidate).toBeCalledTimes(3);
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledTimes(3);
+      expect(mockValidate).toHaveBeenCalledWith(
         value,
         GraphQLInt,
         expect.any(Object),
@@ -2244,7 +2244,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         { arg: { value } },
         ['arg', 'value'],
       );
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         value * 2,
         GraphQLInt,
         expect.any(Object),
@@ -2254,7 +2254,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         { arg: { value } },
         ['arg', 'value'],
       );
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         { value },
         expect.any(Object),
         expect.any(Object),
@@ -2264,7 +2264,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         { arg: { value } },
         ['arg'],
       );
-      expect(mockResolver).toBeCalledTimes(1);
+      expect(mockResolver).toHaveBeenCalledTimes(1);
     });
   });
 });

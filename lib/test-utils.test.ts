@@ -116,7 +116,7 @@ ${expectedUnknownTypeDefs}\
           if (error) {
             expect(() =>
               createSchema({ DirectiveVisitor, name, testCase }),
-            ).toThrowError(error);
+            ).toThrow(error);
           } else {
             const schema = createSchema({
               DirectiveVisitor,

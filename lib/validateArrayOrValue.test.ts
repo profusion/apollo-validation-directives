@@ -50,8 +50,8 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toBe(value);
-    expect(mockValidate).toBeCalledTimes(1);
-    expect(mockValidate).toBeCalledWith(
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    expect(mockValidate).toHaveBeenCalledWith(
       value,
       GraphQLInt,
       container,
@@ -74,8 +74,8 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toBe(value);
-    expect(mockValidate).toBeCalledTimes(1);
-    expect(mockValidate).toBeCalledWith(
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    expect(mockValidate).toHaveBeenCalledWith(
       value,
       GraphQLNonNullInt,
       container,
@@ -99,9 +99,9 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toEqual(array);
-    expect(mockValidate).toBeCalledTimes(array.length);
+    expect(mockValidate).toHaveBeenCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         item,
         GraphQLInt,
         container,
@@ -125,9 +125,9 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toEqual(array);
-    expect(mockValidate).toBeCalledTimes(array.length);
+    expect(mockValidate).toHaveBeenCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         item,
         GraphQLInt,
         container,
@@ -151,9 +151,9 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toEqual(array);
-    expect(mockValidate).toBeCalledTimes(array.length);
+    expect(mockValidate).toHaveBeenCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         item,
         GraphQLNonNullInt,
         container,
@@ -178,9 +178,9 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toEqual([array]);
-    expect(mockValidate).toBeCalledTimes(array.length);
+    expect(mockValidate).toHaveBeenCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         item,
         GraphQLInt,
         container,
@@ -208,9 +208,9 @@ describe('validateArrayOrValue', (): void => {
         resolverArguments,
       ),
     ).toEqual(array);
-    expect(mockValidate).toBeCalledTimes(array.length);
+    expect(mockValidate).toHaveBeenCalledTimes(array.length);
     array.forEach(item =>
-      expect(mockValidate).toBeCalledWith(
+      expect(mockValidate).toHaveBeenCalledWith(
         item,
         GraphQLInt,
         container,
