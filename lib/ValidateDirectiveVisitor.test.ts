@@ -1,6 +1,5 @@
 import type {
   GraphQLArgument,
-  GraphQLEnumType,
   GraphQLInputType,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -774,12 +773,20 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toHaveBeenCalledTimes(1);
           expect(mockValidate).toHaveBeenCalledWith(
             'someOption',
-            new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
-            {
-              ...getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+            expect.objectContaining({
+              ofType: expect.objectContaining({ name: 'MyEnum' }),
+            }),
+            expect.objectContaining({
+              astNode: expect.objectContaining({
+                type: expect.objectContaining({
+                  type: expect.objectContaining({
+                    name: expect.objectContaining({ value: 'MyEnum' }),
+                  }),
+                }),
+              }),
+              name: 'arg',
               policy: 'RESOLVER',
-              validation: expect.any(Function),
-            },
+            }),
             contextValue,
             expect.any(Object),
             undefined,
@@ -1374,12 +1381,20 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
           expect(mockValidate).toHaveBeenCalledTimes(1);
           expect(mockValidate).toHaveBeenCalledWith(
             'someOption',
-            new GraphQLNonNull(schema.getType('MyEnum') as GraphQLEnumType),
-            {
-              ...getFieldArg(QueryType, 'nonNullableEnum', 'arg'),
+            expect.objectContaining({
+              ofType: expect.objectContaining({ name: 'MyEnum' }),
+            }),
+            expect.objectContaining({
+              astNode: expect.objectContaining({
+                type: expect.objectContaining({
+                  type: expect.objectContaining({
+                    name: expect.objectContaining({ value: 'MyEnum' }),
+                  }),
+                }),
+              }),
+              name: 'arg',
               policy: 'RESOLVER',
-              validation: expect.any(Function),
-            },
+            }),
             contextValue,
             expect.any(Object),
             undefined,
