@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2019",
-    "moduleResolution": "node",
-    "module": "CommonJS",
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
     "lib": ["esnext"],
     "allowJs": true,
     "strict": true,
@@ -28,6 +28,7 @@
   "exclude": [
     "examples",
     "node_modules",
-    "build"
+    "build",
+    "**/*.test.ts"
   ]
 }

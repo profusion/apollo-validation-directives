@@ -12,6 +12,7 @@ module.exports = {
       statements: 100,
     },
   },
+  extensionsToTreatAsEsm: ['.ts'],
   moduleFileExtensions: ['ts', 'js'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
@@ -24,6 +25,10 @@ module.exports = {
     '^.+\\.(mt|t|cj|j)s$': [
       'ts-jest',
       {
+        tsconfig: {
+          module: 'esnext',
+          target: 'ES2019',
+        },
         useESM: true,
       },
     ],
