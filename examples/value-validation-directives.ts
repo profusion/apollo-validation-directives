@@ -70,7 +70,7 @@ const yourTypeDefs = [
         arg: [Int] @listLength(min: 1, max: 100)
       ): ListLengthExample
       throwingIntRangeExample(
-        arg: Int @range(min: -10, max: 10, policy: THROW)
+        arg: Int @range(min: -10, max: 10)
       ): IntRangeExample
       trimExample(arg: String @trim(mode: TRIM_ALL)): TrimExample
     }

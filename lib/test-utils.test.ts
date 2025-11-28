@@ -55,7 +55,7 @@ enum ${name}ValidateDirectivePolicy {
 
 export const validationDirectivePolicyArgs = (name: string): string => `\
 """How to handle validation errors"""
-  policy: ${name}ValidateDirectivePolicy = RESOLVER`;
+  policy: ${name}ValidateDirectivePolicy = THROW`;
 
 const buildDescription = (text: string): string =>
   text.length > 70 ? `"""\n${text}\n"""\n` : `"""${text}"""\n`;

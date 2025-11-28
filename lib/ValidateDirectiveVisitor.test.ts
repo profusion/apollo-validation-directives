@@ -151,14 +151,14 @@ type ValidatedInputErrorOutput {
         typeDefs: [
           ...basicTypeDefs,
           gql`
-            input FailInput @testDirective(policy: THROW) {
+            input FailInput @testDirective {
               n: Int
             }
             input FailInputField {
-              n: Int @testDirective(policy: THROW)
+              n: Int @testDirective
             }
             type Query {
-              argShouldFail(arg: Int @testDirective(policy: THROW)): Boolean!
+              argShouldFail(arg: Int @testDirective): Boolean!
               failInput(input: FailInput): Boolean!
               failInputField(input: FailInputField): Boolean!
             }
@@ -653,21 +653,21 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                   nonNullableEnum(arg: MyEnum! @${name}): MyEnum
                   nonNullableListOfNonNullable(arg: [Int!]! @${name}): [Int]
                   nonNullableListOfNullable(arg: [Int]! @${name}): [Int]
-                  nullable(arg: Int @${name}): Int
-                  nullableListOfNullable(arg: [Int] @${name}): [Int]
+                  nullable(arg: Int @${name}(policy: RESOLVER)): Int
+                  nullableListOfNullable(arg: [Int] @${name}(policy: RESOLVER)): [Int]
                   notValidated(arg: Int): Int
                   alsoNotValidated(arg: Int! @${name}(validate: false)): Int
                   defaultResolver(arg: Int @${name}): Int
                   someArgsNotValidated(
-                    arg: Int @${name}
+                    arg: Int @${name}(policy: RESOLVER)
                     notValidated: Int
                   ): Int
                   manyArgsValidated(
-                    arg: Int @${name}
-                    alsoValidated: Int @${name}
+                    arg: Int @${name}(policy: RESOLVER)
+                    alsoValidated: Int @${name}(policy: RESOLVER)
                   ): Int
                   deepNonNullable(
-                    arg: [DeepNonNullableInput!] @${name}
+                    arg: [DeepNonNullableInput!] @${name}(policy: RESOLVER)
                   ): DeepNonNullable
                   doubleValidation(arg: Int @${name} @anotherDirective): Int
                 }
@@ -709,7 +709,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             {
               ...getFieldArg(QueryType, 'nonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -744,7 +744,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             {
               ...getFieldArg(QueryType, 'nonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -785,7 +785,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 }),
               }),
               name: 'arg',
-              policy: 'RESOLVER',
+              policy: 'THROW',
             }),
             contextValue,
             expect.any(Object),
@@ -816,7 +816,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             {
               ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -848,7 +848,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntList,
             {
               ...getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1171,7 +1171,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             {
               ...getFieldArg(QueryType, 'defaultResolver', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1205,7 +1205,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             {
               ...getFieldArg(query, 'doubleValidation', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1219,7 +1219,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLInt,
             {
               ...getFieldArg(query, 'doubleValidation', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1271,7 +1271,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             {
               ...getFieldArg(QueryType, 'nonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1306,7 +1306,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             {
               ...getFieldArg(QueryType, 'nonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1345,7 +1345,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullInt,
             {
               ...getFieldArg(QueryType, 'nonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1393,7 +1393,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
                 }),
               }),
               name: 'arg',
-              policy: 'RESOLVER',
+              policy: 'THROW',
             }),
             contextValue,
             expect.any(Object),
@@ -1425,7 +1425,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             {
               ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1462,7 +1462,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntListNonNull,
             {
               ...getFieldArg(QueryType, 'nonNullableListOfNonNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -1495,7 +1495,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
             GraphQLNonNullIntList,
             {
               ...getFieldArg(QueryType, 'nonNullableListOfNullable', 'arg'),
-              policy: 'RESOLVER',
+              policy: 'THROW',
               validation: expect.any(Function),
             },
             contextValue,
@@ -2164,7 +2164,7 @@ ${validationDirectionEnumTypeDefs(capitalizedName)}
         schema.getType('NoValidatedFields') as GraphQLInputType,
         {
           ...getFieldArg(QueryType, 'deepNullable', 'other'),
-          policy: 'RESOLVER',
+          policy: 'THROW',
           validation: expect.any(Function),
         },
         contextValue,

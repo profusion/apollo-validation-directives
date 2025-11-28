@@ -874,7 +874,7 @@ abstract class ValidateDirectiveVisitor<
   };
 
   public static readonly defaultPolicy: ValidateDirectivePolicy =
-    ValidateDirectivePolicy.RESOLVER;
+    ValidateDirectivePolicy.THROW;
 
   public readonly applyValidationToOutputTypesAfterOriginalResolver: Boolean =
     true;

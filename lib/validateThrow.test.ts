@@ -52,25 +52,25 @@ describe('validate THROW policy', () => {
         ...Range.getMissingCommonTypeDefs(),
         gql`
           input ThirdInput {
-            n: Int @range(max: 200, policy: THROW)
+            n: Int @range(max: 200)
           }
           input SecondInput {
             thirdInput: ThirdInput
-            numbersThrow: [Int!] @range(max: 100, policy: THROW)
-            numbers: [Int] @range(max: 200)
+            numbersThrow: [Int!] @range(max: 100)
+            numbers: [Int] @range(max: 200, policy: RESOLVER)
           }
           input FirstInput {
-            n: Int @range(max: 0, policy: THROW)
+            n: Int @range(max: 0)
             secondInput: SecondInput
           }
           type Query {
             argTest(
-              n: Int @range(policy: THROW, max: 2)
+              n: Int @range(max: 2)
               n2: Int @range(policy: RESOLVER, max: 10)
             ): Boolean
             inputTest(arg: FirstInput): Boolean
-            outputTest(arg: Int!): Int! @range(max: 200, policy: THROW)
-            optionalOutputTest(arg: Int): Int @range(max: 200, policy: THROW)
+            outputTest(arg: Int!): Int! @range(max: 200)
+            optionalOutputTest(arg: Int): Int @range(max: 200)
           }
         `,
       ],

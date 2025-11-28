@@ -70,8 +70,7 @@ const services: ServicesSetup[] = [
     },
     typeDefs: gql`
       type Query {
-        myNumber(args: Int @range(max: 100, policy: THROW)): Int
-          @range(min: 2, policy: THROW)
+        myNumber(args: Int @range(max: 100)): Int @range(min: 2)
       }
     `,
   },
@@ -85,8 +84,8 @@ const services: ServicesSetup[] = [
     },
     typeDefs: gql`
       type Query {
-        myString(args: String @stringLength(max: 200, policy: THROW)): String
-          @stringLength(min: 3, policy: THROW)
+        myString(args: String @stringLength(max: 200)): String
+          @stringLength(min: 3)
       }
     `,
   },

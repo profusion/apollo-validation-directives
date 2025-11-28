@@ -30,8 +30,8 @@ const build = (isFederated: boolean): GraphQLSchema => {
       ...range.getTypeDefs(),
       gql`
         type MyType {
-          int: Int! @range(min: 20, policy: THROW)
-          list: [Int!]! @listLength(min: 1, policy: THROW)
+          int: Int! @range(min: 20)
+          list: [Int!]! @listLength(min: 1)
         }
         type Query {
           myType: MyType!
