@@ -37,13 +37,13 @@ type ResolverArgs<TContext extends object = object> = Parameters<
 >;
 
 export interface MissingPermissionsResolverInfo extends GraphQLResolveInfo {
-  missingPermissions?: string[];
+  missingPermissions?: string[] | null;
 }
 
 export type CheckMissingPermissions<TContext extends object = object> = (
   requiredPermissions: string[],
   cacheKey: string,
-  ...args: ResolverArgs<TContext>
+  ...args: [...ResolverArgs<TContext>, ValidateDirectivePolicy?]
 ) => null | string[];
 
 export type HasPermissionsContext<TContext extends object = object> = {
@@ -53,39 +53,33 @@ export type HasPermissionsContext<TContext extends object = object> = {
 export type FilterMissingPermissions = (
   grantedPermissions: Set<string> | undefined,
   requiredPermissions: string[],
+  stopOnFirstMissingPermission?: boolean,
 ) => null | string[];
 
-// gather all missing permissions, only useful during debug since it's slower
-// but lists everything at once, which helps debug
-export const debugFilterMissingPermissions = (
+/**
+ * Gathers missing permissions.
+ * @param grantedPermissions The Set containing the user permissions
+ * @param requiredPermissions The permissions the user must have
+ * @param stopOnFirstMissingPermission Indicates if it should stop as soon as one required permission is missing or not. Default: true.
+ * @returns
+ */
+export const defaultFilterMissingPermissions: FilterMissingPermissions = (
   grantedPermissions: Set<string> | undefined,
   requiredPermissions: string[],
+  stopOnFirstMissingPermission = true,
 ): null | string[] => {
   if (!grantedPermissions) {
     return requiredPermissions;
+  }
+  if (stopOnFirstMissingPermission) {
+    const missing = requiredPermissions.find(p => !grantedPermissions.has(p));
+    if (!missing) return null;
+    return [missing];
   }
   const missing = requiredPermissions.filter(p => !grantedPermissions.has(p));
   if (missing.length === 0) return null;
   return missing;
 };
-
-// faster version that fails on the first missing permission, reports only that
-export const prodFilterMissingPermissions = (
-  grantedPermissions: Set<string> | undefined,
-  requiredPermissions: string[],
-): null | string[] => {
-  if (!grantedPermissions) {
-    return requiredPermissions;
-  }
-  const missing = requiredPermissions.find(p => !grantedPermissions.has(p));
-  if (!missing) return null;
-  return [missing];
-};
-
-/* istanbul ignore next */
-const defaultFilterMissingPermissions = isDebug
-  ? debugFilterMissingPermissions
-  : prodFilterMissingPermissions;
 
 export type GetErrorMessage = (missingPermissions: string[]) => string;
 
@@ -193,15 +187,21 @@ export class HasPermissionsDirectiveVisitor<
 
     const missingPermissionsCache: { [key: string]: string[] | null } = {};
 
-    const checkMissingPermissions = (
+    const checkMissingPermissions: CheckMissingPermissions = (
       requiredPermissions: string[],
       cacheKey: string,
+      _source,
+      _fieldArgs,
+      _context,
+      _info,
+      policy = defaultPolicyOutsideClass,
     ): string[] | null => {
       let missingPermissions = missingPermissionsCache[cacheKey];
       if (missingPermissions === undefined) {
         missingPermissions = filterMissingPermissions(
           grantedPermissions,
           requiredPermissions,
+          isDebug && policy !== defaultPolicyOutsideClass,
         );
         missingPermissionsCache[cacheKey] = missingPermissions;
       }
@@ -252,14 +252,20 @@ export class HasPermissionsDirectiveVisitor<
       }
 
       const { checkMissingPermissions } = context;
-      let missingPermissions = checkMissingPermissions.apply(this, [
-        permissions,
-        cacheKey,
-        resolverSource,
-        resolverArgs,
-        context,
-        resolverInfo as unknown as GraphQLResolveInfo,
-      ]);
+      let missingPermissions = checkMissingPermissions.apply(
+        this as unknown as HasPermissionsDirectiveVisitor<
+          HasPermissionsDirectiveArgs,
+          HasPermissionsContext
+        >,
+        [
+          permissions,
+          cacheKey,
+          resolverSource,
+          resolverArgs,
+          context,
+          resolverInfo as unknown as MissingPermissionsResolverInfo,
+        ],
+      );
       if (!(missingPermissions && missingPermissions.length > 0)) {
         missingPermissions = null;
       }
@@ -286,8 +292,15 @@ export class HasPermissionsDirectiveVisitor<
           );
         }
       }
-      // eslint-disable-next-line no-param-reassign
-      resolverInfo.missingPermissions = missingPermissions;
+      // making sure we don't overwrite keys not related to this directive
+      /* eslint-disable no-param-reassign */
+      (
+        resolverInfo as unknown as Omit<
+          MissingPermissionsResolverInfo,
+          keyof GraphQLResolveInfo
+        >
+      ).missingPermissions = missingPermissions;
+      /* eslint-enable no-param-reassign */
 
       return value;
     };
